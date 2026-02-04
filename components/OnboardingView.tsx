@@ -1,13 +1,11 @@
-
 import React, { useState } from 'react';
 import { Button } from './Shared';
 
 interface OnboardingStep {
   title: string;
   description: string;
-  icon: string;
   color: string;
-  tag: string;
+  protocolName: string;
 }
 
 interface OnboardingViewProps {
@@ -20,124 +18,139 @@ export const OnboardingView: React.FC<OnboardingViewProps> = ({ role, onComplete
 
   const riderSteps: OnboardingStep[] = [
     {
-      title: "Tactical Dispatch",
-      description: "Use Magic Assist to request rides using natural language. Just tell us where you are and where you're going.",
-      icon: "wand-magic-sparkles",
-      color: "text-brand-orange",
-      tag: "AI POWERED"
+      protocolName: "Neural Link",
+      title: "Smart Dispatch",
+      description: "Request rides or freight deliveries using natural language. Our AI understand landmarks and local context instantly.",
+      color: "text-brand-blue"
     },
     {
-      title: "Elite Marketplace",
-      description: "Drivers bid for your trip in real-time. Choose the best price, rating, or ETA that suits your mission.",
-      icon: "hand-holding-dollar",
-      color: "text-emerald-500",
-      tag: "BID PROTOCOL"
+      protocolName: "Market Grid",
+      title: "Bidding Market",
+      description: "Drivers compete for your trip in real-time. Choose your partner based on price, rating, and vehicle class.",
+      color: "text-brand-orange"
     },
     {
-      title: "Freight Protocol",
-      description: "Moving heavy gear? Switch to Freight mode to request anything from a bike to a 10-tonne truck.",
-      icon: "truck-ramp-box",
-      color: "text-blue-400",
-      tag: "LOGISTICS"
+      protocolName: "Secure Path",
+      title: "Tactical Safety",
+      description: "Every journey is monitored by our security grid. Share your live location with trusted contacts with a single tap.",
+      color: "text-brand-blue"
     }
   ];
 
   const driverSteps: OnboardingStep[] = [
     {
-      title: "Online Protocol",
-      description: "Toggle 'Go Online' to broadcast your location to the grid and start receiving live ride requests.",
-      icon: "signal",
-      color: "text-emerald-500",
-      tag: "BROADCAST"
+      protocolName: "Ops Control",
+      title: "Mission Control",
+      description: "Access a constant stream of high-value ride and freight requests across your designated service areas.",
+      color: "text-brand-orange"
     },
     {
+      protocolName: "Yield Protocol",
       title: "Strategic Bidding",
-      description: "See a request? Counter with your best price. High ratings and fair bids win more missions.",
-      icon: "gavel",
-      color: "text-brand-orange",
-      tag: "BIDDING"
+      description: "Set your own prices. Counter-offer on requests and build your reputation as an elite marketplace partner.",
+      color: "text-brand-blue"
     },
     {
-      title: "Safety First",
-      description: "Your safety is monitored. Use the Safety Hub to trigger SOS or share your live status with dispatch.",
-      icon: "shield-halved",
-      color: "text-red-500",
-      tag: "SECURITY"
+      protocolName: "Asset Support",
+      title: "Fleet Support",
+      description: "Benefit from localized mapping and real-time traffic intelligence optimized for the Zimbabwean landscape.",
+      color: "text-brand-orange"
     }
   ];
 
   const steps = role === 'rider' ? riderSteps : driverSteps;
-  const step = steps[currentStep];
+  const isLastStep = currentStep === steps.length - 1;
 
   const handleNext = () => {
-    if (currentStep < steps.length - 1) {
-      setCurrentStep(currentStep + 1);
-    } else {
+    if (isLastStep) {
       onComplete();
+    } else {
+      setCurrentStep(prev => prev + 1);
     }
   };
 
+  const step = steps[currentStep];
+
   return (
-    <div className="fixed inset-0 z-[300] bg-brand-blue/98 backdrop-blur-2xl flex flex-col items-center justify-center p-8 animate-fade-in overflow-hidden">
-      {/* Tech HUD Background */}
-      <div className="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] pointer-events-none"></div>
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[150%] h-[150%] border border-white/5 rounded-full animate-reverse-spin pointer-events-none"></div>
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-[120%] border border-brand-orange/10 rounded-full animate-spin-slow pointer-events-none"></div>
-      
-      <div className="w-full max-w-sm relative z-10 flex flex-col items-center text-center">
-        {/* Step Progress HUD */}
-        <div className="flex gap-3 mb-16">
-          {steps.map((_, i) => (
-            <div 
-              key={i} 
-              className={`h-1 rounded-full transition-all duration-700 ${i === currentStep ? 'bg-brand-orange w-12 shadow-[0_0_10px_rgba(255,95,0,0.5)]' : 'bg-white/10 w-6'}`}
-            ></div>
-          ))}
-        </div>
+    <div className="fixed inset-0 z-[500] bg-white flex flex-col font-sans overflow-hidden">
+      {/* Background Stylized Number */}
+      <div className="absolute top-0 right-0 p-10 pointer-events-none select-none overflow-hidden h-full flex items-center">
+        <span 
+          className={`text-[32rem] font-black opacity-[0.04] leading-none transition-all duration-700 ease-in-out transform ${step.color} ${
+            currentStep % 2 === 0 ? 'translate-x-12' : '-translate-x-12'
+          }`}
+          style={{ letterSpacing: '-0.05em' }}
+        >
+          {currentStep + 1}
+        </span>
+      </div>
 
-        {/* Icon Sphere */}
-        <div className="relative w-48 h-48 mb-12 flex items-center justify-center">
-          <div className="absolute inset-0 bg-white/5 rounded-full border border-white/10 animate-pulse"></div>
-          <div className="w-32 h-32 rounded-[2.5rem] bg-white/5 backdrop-blur-3xl border border-white/10 flex items-center justify-center shadow-2xl relative rotate-3">
-             <i className={`fa-solid fa-${step.icon} text-5xl ${step.color} drop-shadow-[0_0_15px_rgba(255,255,255,0.2)]`}></i>
-             <div className="absolute -bottom-3 bg-brand-orange text-white text-[8px] font-black px-3 py-1 rounded-full tracking-[0.2em] shadow-lg">
-               {step.tag}
-             </div>
+      <div className="flex-1 flex flex-col px-10 pt-24 pb-12 relative z-10">
+        {/* Top Navigation HUD */}
+        <div className="flex items-center justify-between mb-16">
+          <div className="flex gap-1.5">
+            {steps.map((_, i) => (
+              <div 
+                key={i} 
+                className={`h-1 rounded-full transition-all duration-500 ease-out ${
+                  i === currentStep ? 'w-12 bg-slate-900' : 'w-4 bg-slate-100'
+                }`}
+              />
+            ))}
           </div>
+          <span className="text-[10px] font-black text-slate-300 uppercase tracking-[0.4em]">Step 0{currentStep + 1} / 03</span>
         </div>
 
-        {/* Text Content */}
-        <div className="min-h-[140px] flex flex-col justify-center">
-          <h2 className="text-3xl font-black text-white tracking-tighter mb-4 animate-step-in uppercase italic">
-            {step.title}
-          </h2>
-          <p className="text-blue-100/50 text-[13px] font-medium leading-relaxed max-w-[280px] mx-auto animate-fade-in" key={currentStep}>
+        {/* Content Section */}
+        <div className="flex-1 flex flex-col justify-center max-w-sm">
+          <div className="mb-6 animate-fade-in">
+            <span className={`text-[10px] font-black uppercase tracking-[0.5em] mb-4 block ${step.color}`}>
+              {step.protocolName}
+            </span>
+            <h1 className="text-6xl font-black text-slate-900 leading-[0.9] tracking-tighter uppercase mb-8">
+              {step.title}
+            </h1>
+            <div className="w-12 h-1 bg-slate-900 mb-8"></div>
+          </div>
+
+          <p className="text-lg text-slate-500 font-medium leading-relaxed max-w-[280px]">
             {step.description}
           </p>
         </div>
 
-        {/* Action Button */}
-        <div className="w-full mt-12 space-y-4">
+        {/* Action HUD */}
+        <div className="mt-auto space-y-6">
           <Button 
-            variant="secondary" 
-            className="w-full py-6 text-[11px] font-black uppercase tracking-[0.4em] rounded-[2rem] shadow-2xl shadow-brand-orange/30 transform active:scale-95 transition-all"
+            variant={isLastStep ? "primary" : "outline"} 
+            className={`w-full py-7 rounded-2xl shadow-2xl transition-all duration-300 font-black uppercase tracking-[0.25em] text-[11px] border-2 ${
+              isLastStep 
+                ? "bg-slate-900 text-white border-slate-900" 
+                : "bg-white text-slate-900 border-slate-100 hover:border-slate-300"
+            }`}
             onClick={handleNext}
           >
-            {currentStep === steps.length - 1 ? 'Engage Protocol' : 'Initialize Next'}
+            {isLastStep ? "Initiate Mode" : "Continue"}
           </Button>
-
-          <button 
-            onClick={onComplete}
-            className="text-[10px] font-black text-white/20 uppercase tracking-[0.3em] hover:text-white transition-colors py-2"
-          >
-            Skip Briefing
-          </button>
+          
+          <div className="flex items-center justify-between px-2">
+            {!isLastStep && (
+              <button 
+                onClick={onComplete}
+                className="py-2 text-[9px] font-black text-slate-300 uppercase tracking-[0.3em] hover:text-slate-500 transition-colors"
+              >
+                Skip Briefing
+              </button>
+            )}
+            <div className="flex items-center gap-3 ml-auto opacity-20">
+              <div className="h-[1px] w-8 bg-slate-900"></div>
+              <span className="text-[9px] font-black text-slate-900 uppercase tracking-[0.3em]">RideIn Zimbabwe</span>
+            </div>
+          </div>
         </div>
       </div>
 
-      <div className="absolute bottom-12 text-[9px] font-black text-white/10 uppercase tracking-[0.5em]">
-        RideIn Tactical Authorization v1.0
-      </div>
+      {/* Subtle Grid Pattern Overlay */}
+      <div className="absolute inset-0 pointer-events-none opacity-[0.02] bg-[url('https://www.transparenttextures.com/patterns/graphy.png')]"></div>
     </div>
   );
 };
