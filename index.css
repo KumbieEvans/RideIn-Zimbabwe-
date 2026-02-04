@@ -1,4 +1,3 @@
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -9,16 +8,28 @@
     --sar: env(safe-area-inset-right, 0px);
     --sab: env(safe-area-inset-bottom, 0px);
     --sal: env(safe-area-inset-left, 0px);
+    --apple-ease: cubic-bezier(0.32, 0.72, 0, 1);
+  }
+
+  * {
+    -webkit-tap-highlight-color: transparent;
+    outline: none !important;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    background-color: #001D3D;
   }
 
   body {
-    overscroll-behavior-y: contain;
-    -webkit-tap-highlight-color: transparent;
+    overscroll-behavior-y: none;
     font-family: 'Montserrat', sans-serif;
     user-select: none;
     background-color: #001D3D;
     color: #FFFFFF;
     padding: var(--sat) var(--sar) var(--sab) var(--sal);
+    -webkit-overflow-scrolling: touch;
+    overflow-x: hidden;
   }
 }
 
@@ -27,48 +38,58 @@
   .safe-bottom { padding-bottom: var(--sab); }
   .no-scrollbar::-webkit-scrollbar { display: none; }
 
-  .scanline {
-    width: 100%;
-    height: 100px;
-    z-index: 5;
-    background: linear-gradient(0deg, rgba(0, 0, 0, 0) 0%, rgba(255, 255, 255, 0.05) 50%, rgba(0, 0, 0, 0) 100%);
-    opacity: 0.1;
+  .glass-reflection {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .glass-reflection::after {
+    content: "";
     position: absolute;
-    bottom: 100%;
-    animation: scanline 6s linear infinite;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: linear-gradient(
+      45deg,
+      transparent 0%,
+      rgba(255, 255, 255, 0.05) 45%,
+      rgba(255, 255, 255, 0.2) 50%,
+      rgba(255, 255, 255, 0.05) 55%,
+      transparent 100%
+    );
+    transform: rotate(30deg);
+    animation: reflection 4s infinite linear;
+    pointer-events: none;
   }
 
-  @keyframes scanline {
-    0% { bottom: 100%; }
-    100% { bottom: -100px; }
+  @keyframes reflection {
+    0% { transform: translateX(-100%) rotate(30deg); }
+    100% { transform: translateX(100%) rotate(30deg); }
   }
 
-  .cursor-blink {
-    display: inline-block;
-    width: 8px;
-    height: 15px;
-    background: #FF5F00;
-    animation: blink 0.8s infinite;
+  .haptic-press {
+    transition: transform 0.2s cubic-bezier(0.32, 0.72, 0, 1);
+  }
+  
+  .haptic-press:active {
+    transform: scale(0.96);
   }
 
-  @keyframes blink {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0; }
+  .native-blur {
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
   }
+}
 
-  .pulse-ring {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    animation: ring-pulse 2s infinite;
-  }
+/* Custom view transition shim */
+.view-enter {
+  opacity: 0;
+  transform: scale(1.05);
+}
 
-  @keyframes ring-pulse {
-    0% { width: 20px; height: 20px; opacity: 1; border: 2px solid #FF5F00; }
-    100% { width: 100px; height: 100px; opacity: 0; border: 4px solid #FF5F00; }
-  }
+.view-enter-active {
+  opacity: 1;
+  transform: scale(1);
+  transition: opacity 400ms var(--apple-ease), transform 400ms var(--apple-ease);
 }

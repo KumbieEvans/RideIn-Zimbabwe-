@@ -18,17 +18,17 @@ export const Button = React.memo((props: ButtonProps) => {
     ...rest 
   } = props;
 
-  const base = "relative px-6 py-4 rounded-lg font-bold transition-all duration-300 haptic-press flex items-center justify-center gap-2 tracking-wide disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden group";
+  const base = "relative px-6 py-4 rounded-xl font-bold transition-all duration-300 haptic-press flex items-center justify-center gap-2 tracking-wide disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden group";
   
   const variants = {
-    primary: "bg-brand-blue text-white shadow-lg shadow-brand-blue/10",
-    secondary: "bg-brand-orange text-white shadow-lg shadow-brand-orange/10",
-    "brand-dark": "bg-black text-white",
-    uber: "bg-black text-white hover:bg-zinc-800 text-sm uppercase tracking-widest",
-    outline: "bg-white border-2 border-slate-100 text-slate-900 hover:border-black",
-    danger: "bg-red-50 text-red-600 hover:bg-red-100",
-    ghost: "bg-transparent text-slate-500 hover:bg-black/5",
-    white: "bg-white text-black shadow-md"
+    primary: "bg-brand-blue text-white shadow-lg shadow-brand-blue/10 active:shadow-none",
+    secondary: "bg-brand-orange text-white shadow-lg shadow-brand-orange/10 active:shadow-none",
+    "brand-dark": "bg-black text-white active:bg-zinc-900",
+    uber: "bg-black text-white hover:bg-zinc-800 text-sm uppercase tracking-widest active:scale-95",
+    outline: "bg-white border-2 border-slate-100 text-slate-900 hover:border-black active:bg-slate-50",
+    danger: "bg-red-50 text-red-600 hover:bg-red-100 active:bg-red-200",
+    ghost: "bg-transparent text-slate-500 hover:bg-black/5 active:bg-black/10",
+    white: "bg-white text-black shadow-md active:shadow-sm"
   };
 
   return (
@@ -58,7 +58,7 @@ export const Card = React.memo<{
   return (
     <div 
       onClick={onClick}
-      className={`rounded-xl p-6 ${variants[variant]} ${onClick ? 'cursor-pointer active:scale-[0.98] transition-all' : ''} ${className}`}
+      className={`rounded-2xl p-6 ${variants[variant]} ${onClick ? 'cursor-pointer haptic-press transition-all active:bg-slate-50' : ''} ${className}`}
     >
       {children}
     </div>
@@ -78,17 +78,17 @@ export const Input = React.memo<InputProps>(({
   const styles = {
     light: {
       label: "text-zinc-500 font-bold",
-      input: "bg-zinc-50 border-transparent border-b-zinc-200 border-b-2 text-black focus:border-black focus:bg-zinc-100 rounded-t-lg",
+      input: "bg-zinc-50 border-transparent border-b-zinc-200 border-b-2 text-black focus:border-black focus:bg-zinc-100 rounded-t-xl",
       icon: "text-zinc-400 group-focus-within:text-black"
     },
     dark: {
       label: "text-neutral-500",
-      input: "bg-neutral-800 border-b-2 border-neutral-700 text-white focus:border-brand-blue/50",
+      input: "bg-neutral-800 border-b-2 border-neutral-700 text-white focus:border-brand-blue/50 rounded-t-xl",
       icon: "text-neutral-500 group-focus-within:text-white"
     },
     glass: {
       label: "text-zinc-400 font-bold tracking-[0.1em]",
-      input: "bg-zinc-50 border-b-2 border-zinc-100 text-black placeholder-zinc-300 focus:border-black transition-all",
+      input: "bg-zinc-50 border-b-2 border-zinc-100 text-black placeholder-zinc-300 focus:border-black transition-all rounded-t-xl",
       icon: "text-zinc-300 group-focus-within:text-black transition-colors"
     }
   };
@@ -135,7 +135,6 @@ export const Badge = React.memo<{ children: React.ReactNode; color?: string; cla
   );
 });
 
-// Adding Toggle component to fix compilation error in RiderHomeView.tsx
 export const Toggle = React.memo<{ 
   active: boolean; 
   onToggle: (val: boolean) => void; 
@@ -144,10 +143,10 @@ export const Toggle = React.memo<{
   className?: string;
 }>(({ active, onToggle, label, icon, className = '' }) => {
   return (
-    <div className={`flex items-center justify-between p-4 bg-zinc-50 rounded-2xl border-2 border-transparent transition-all ${active ? 'border-brand-blue/10 bg-blue-50/50' : ''} ${className}`}>
+    <div className={`flex items-center justify-between p-4 bg-zinc-50 rounded-2xl border-2 border-transparent transition-all haptic-press ${active ? 'border-brand-blue/10 bg-blue-50/50' : ''} ${className}`}>
       <div className="flex items-center gap-3">
         {icon && (
-          <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${active ? 'bg-brand-blue text-white' : 'bg-white text-zinc-400 border border-zinc-100'}`}>
+          <div className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all ${active ? 'bg-brand-blue text-white' : 'bg-white text-zinc-400 border border-zinc-100'}`}>
             <i className={`fa-solid fa-${icon} text-xs`}></i>
           </div>
         )}
@@ -158,7 +157,7 @@ export const Toggle = React.memo<{
         onClick={() => onToggle(!active)}
         className={`w-12 h-6 rounded-full relative transition-colors duration-300 focus:outline-none ${active ? 'bg-brand-blue' : 'bg-zinc-200'}`}
       >
-        <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform duration-300 ${active ? 'left-7' : 'left-1'}`}></div>
+        <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all duration-300 ${active ? 'left-7 shadow-lg' : 'left-1 shadow-sm'}`}></div>
       </button>
     </div>
   );

@@ -1,4 +1,3 @@
-
 // Safety: Shim process.env for browser environments immediately
 (window as any).process = (window as any).process || { env: {} };
 (window as any).process.env = (window as any).process.env || {};
@@ -43,10 +42,10 @@ const DriverHomeView = lazyLoad<React.FC<HomeViewProps>>(() => import('./compone
 const PendingApprovalView = lazyLoad<React.FC<HomeViewProps>>(() => import('./components/PendingApprovalView'), 'PendingApprovalView');
 
 const LoadingScreen = () => (
-  <div className="min-h-screen flex items-center justify-center bg-white">
+  <div className="min-h-screen flex items-center justify-center bg-[#001D3D]">
     <div className="flex flex-col items-center gap-4">
-      <div className="w-10 h-10 border-[3px] border-slate-100 border-t-brand-blue rounded-full animate-spin"></div>
-      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Synchronizing Access...</p>
+      <div className="w-10 h-10 border-[3px] border-white/10 border-t-brand-orange rounded-full animate-spin"></div>
+      <p className="text-[10px] font-black text-white/20 uppercase tracking-[0.4em]">Synchronizing Network...</p>
     </div>
   </div>
 );
@@ -58,6 +57,7 @@ const App: React.FC = () => {
   const [hasSeenIntro, setHasSeenIntro] = useState<boolean | null>(null);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [ablyStatus, setAblyStatus] = useState(ablyService.connectionState);
+  const [viewKey, setViewKey] = useState(0); // For transition triggering
 
   useEffect(() => {
     const splashTimer = setTimeout(() => setShowSplash(false), 3000);
@@ -116,6 +116,7 @@ const App: React.FC = () => {
     } else {
       ablyService.disconnect();
     }
+    setViewKey(v => v + 1); // Trigger transition on user change
   }, [user, isOnline]);
 
   const handleLogin = (newUser: User) => setUser(newUser);
@@ -125,13 +126,13 @@ const App: React.FC = () => {
   const completeOnboarding = () => {
     localStorage.setItem('ridein_intro_seen', 'true');
     setHasSeenIntro(true);
+    setViewKey(v => v + 1);
   };
 
   if (showSplash || authLoading || hasSeenIntro === null) return <SplashAnimation />;
 
   const showConnAlert = !isOnline || ablyStatus === 'connecting' || ablyStatus === 'disconnected' || ablyStatus === 'suspended';
 
-  // Role-Aware Routing Logic
   const renderView = () => {
     if (!user) {
       if (!hasSeenIntro) {
@@ -165,7 +166,9 @@ const App: React.FC = () => {
         </div>
       )}
       
-      {renderView()}
+      <div key={viewKey} className="animate-fade-in">
+        {renderView()}
+      </div>
     </Suspense>
   );
 };

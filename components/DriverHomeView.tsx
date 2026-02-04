@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { User, Trip, VehicleType } from '../types';
 import { Button, Card, Badge } from './Shared';
@@ -77,10 +76,10 @@ export const DriverHomeView: React.FC<{ user: User; onLogout: () => void; onUser
   };
 
   return (
-    <div className="h-screen flex flex-col bg-[#000814] relative overflow-hidden">
+    <div className="h-screen flex flex-col bg-[#000814] relative overflow-y-auto">
       <SideDrawer isOpen={isDrawerOpen} onClose={() => setIsDrawerOpen(false)} user={user} onLogout={onLogout} activeView={activeView} onNavigate={setActiveView} onUserUpdate={onUserUpdate} />
       
-      <div className="bg-[#001D3D] p-6 pt-12 flex justify-between items-center shadow-2xl safe-top border-b border-white/5">
+      <div className="bg-[#001D3D] p-6 pt-12 flex justify-between items-center shadow-2xl safe-top border-b border-white/5 shrink-0">
          <button onClick={() => setIsDrawerOpen(true)} className="w-12 h-12 bg-white/5 rounded-2xl flex items-center justify-center text-white"><i className="fa-solid fa-bars-staggered text-xl"></i></button>
          <div className="text-center">
             <p className="text-[10px] font-black text-brand-orange uppercase tracking-[0.3em] mb-1">Fleet Node: {user.name.split(' ')[0]}</p>
@@ -94,7 +93,7 @@ export const DriverHomeView: React.FC<{ user: User; onLogout: () => void; onUser
          </button>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 pb-24 no-scrollbar">
+      <div className="flex-1 p-4 space-y-4 pb-24 no-scrollbar overflow-y-auto">
          {isOnline ? (
             sortedTrips.length === 0 ? (
                <div className="h-full flex flex-col items-center justify-center py-20 text-white/20 text-center animate-fade-in">

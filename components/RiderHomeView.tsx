@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, Suspense, useMemo } from 'react';
 import { User, Trip, TripStatus, VehicleType, Bid, PassengerCategory, FreightCategory } from '../types';
 import { Button, Card, Badge, Input } from './Shared';
@@ -181,7 +180,7 @@ export const RiderHomeView: React.FC<{ user: User; onLogout: () => void; onUserU
   }, [pickupCoords, dropoffCoords]);
 
   return (
-    <div className="h-screen flex flex-col bg-[#001D3D] relative overflow-hidden font-sans">
+    <div className="h-screen flex flex-col bg-[#001D3D] relative overflow-y-auto font-sans">
       {showOnboarding && <OnboardingView role="rider" onComplete={() => {
         localStorage.setItem(`onboarding_rider_${user.id}`, 'true');
         setShowOnboarding(false);
@@ -199,7 +198,7 @@ export const RiderHomeView: React.FC<{ user: User; onLogout: () => void; onUserU
 
       <SideDrawer isOpen={isDrawerOpen} onClose={() => setIsDrawerOpen(false)} user={user} onLogout={onLogout} activeView={activeView} onNavigate={setActiveView} onUserUpdate={onUserUpdate} />
       
-      <div className="flex-1 relative">
+      <div className="flex-1 min-h-[50vh] relative">
          <Suspense fallback={<div className="w-full h-full bg-brand-blue/5" />}>
            <MapView markers={mapMarkers} routeGeometry={routeGeometry} />
          </Suspense>
@@ -216,7 +215,7 @@ export const RiderHomeView: React.FC<{ user: User; onLogout: () => void; onUserU
       </div>
 
       {isMagicActive && (
-        <div className="absolute inset-0 z-[400] bg-brand-blue/98 backdrop-blur-3xl flex flex-col items-center justify-center p-8 text-center animate-fade-in">
+        <div className="absolute inset-0 z-[400] bg-brand-blue/98 backdrop-blur-3xl flex flex-col items-center justify-center p-8 text-center animate-fade-in overflow-y-auto">
           <div className="scanline absolute inset-0 opacity-10 pointer-events-none"></div>
           <button onClick={() => setIsMagicActive(false)} className="absolute top-12 right-6 w-12 h-12 rounded-full bg-white/10 flex items-center justify-center text-white text-xl"><i className="fa-solid fa-xmark"></i></button>
           <div className="mb-12 text-white">
@@ -240,7 +239,7 @@ export const RiderHomeView: React.FC<{ user: User; onLogout: () => void; onUserU
       )}
 
       {viewState === 'idle' && !isMagicActive && (
-         <div className="bg-white p-8 rounded-t-[3rem] shadow-[0_-20px_50px_rgba(0,0,0,0.2)] safe-bottom animate-slide-up relative z-10 border-t border-slate-100">
+         <div className="bg-white p-8 rounded-t-[3rem] shadow-[0_-20px_50px_rgba(0,0,0,0.2)] safe-bottom animate-slide-up relative z-10 border-t border-slate-100 shrink-0">
             <div className="w-14 h-1.5 bg-slate-100 rounded-full mx-auto mb-8"></div>
             <div className="flex bg-slate-50 p-1.5 rounded-2xl mb-8 border border-slate-100">
                 <button onClick={() => setActiveTab('ride')} className={`flex-1 py-3 text-[10px] font-black uppercase tracking-[0.2em] rounded-xl transition-all ${activeTab === 'ride' ? 'bg-white text-brand-blue shadow-md' : 'text-slate-400'}`}>PASSENGER</button>
@@ -272,7 +271,7 @@ export const RiderHomeView: React.FC<{ user: User; onLogout: () => void; onUserU
       )}
 
       {viewState === 'review' && (
-        <div className="bg-white p-10 rounded-t-[3rem] shadow-[0_-20px_50px_rgba(0,0,0,0.2)] safe-bottom animate-slide-up relative z-10">
+        <div className="bg-white p-10 rounded-t-[3rem] shadow-[0_-20px_50px_rgba(0,0,0,0.2)] safe-bottom animate-slide-up relative z-10 shrink-0">
            <div className="flex justify-between items-center mb-10">
               <button onClick={() => setViewState('idle')} className="text-slate-400 font-black uppercase text-[10px] tracking-widest"><i className="fa-solid fa-arrow-left mr-2"></i> Adjust</button>
               <Badge color="blue" className="px-4 py-1.5">{routeDetails?.distance}</Badge>
@@ -299,7 +298,7 @@ export const RiderHomeView: React.FC<{ user: User; onLogout: () => void; onUserU
       )}
 
       {viewState === 'bidding' && activeTrip && (
-        <div className="bg-white p-10 rounded-t-[3rem] shadow-[0_-20px_60px_rgba(0,0,0,0.3)] safe-bottom animate-slide-up h-[75vh] flex flex-col relative z-10">
+        <div className="bg-white p-10 rounded-t-[3rem] shadow-[0_-20px_60px_rgba(0,0,0,0.3)] safe-bottom animate-slide-up h-[75vh] flex flex-col relative z-10 overflow-y-auto">
            <div className="flex justify-between items-center mb-8">
               <div className="flex items-center gap-4">
                  <div className="w-2.5 h-2.5 bg-emerald-500 rounded-full animate-ping"></div>

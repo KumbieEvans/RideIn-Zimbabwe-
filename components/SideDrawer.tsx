@@ -1,4 +1,3 @@
-
 import React, { useRef, useEffect, useState } from 'react';
 import { User, UserRole } from '../types';
 import { xanoService } from '../services/xano';
@@ -25,13 +24,22 @@ export const SideDrawer: React.FC<SideDrawerProps> = ({
 }) => {
   const isMounted = useRef(true);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [shouldRender, setShouldRender] = useState(isOpen);
+
+  useEffect(() => {
+    if (isOpen) setShouldRender(true);
+  }, [isOpen]);
 
   useEffect(() => {
     isMounted.current = true;
     return () => { isMounted.current = false; };
   }, []);
 
-  if (!isOpen) return null;
+  if (!shouldRender) return null;
+
+  const handleAnimationEnd = () => {
+    if (!isOpen) setShouldRender(false);
+  };
 
   const zones = [
     { 
@@ -61,12 +69,7 @@ export const SideDrawer: React.FC<SideDrawerProps> = ({
   ];
 
   const handleSwitchMode = async () => {
-    // Determine context
     const isApprovedDriver = user.driver_approved === true || user.driver_status === 'approved';
-    
-    // Logic: 
-    // If Rider: Can switch to Driver only if approved.
-    // If Driver: Can always switch back to Rider.
     const newRole = user.role === 'rider' ? 'driver' : 'rider';
     
     if (user.role === 'rider' && !isApprovedDriver) {
@@ -77,12 +80,8 @@ export const SideDrawer: React.FC<SideDrawerProps> = ({
     if (confirm(`Synchronize access to ${newRole} mode?`)) {
       setIsSyncing(true);
       try {
-        // Step 1: Protocol Cleanup - Unsubscribe from current role channels
         ablyService.prepareRoleSwitch();
-        
-        // Step 2: Backend Sync
         const updatedUser = await xanoService.switchRole(user.id, newRole);
-        
         if (isMounted.current) {
           onUserUpdate(updatedUser);
           onNavigate('map');
@@ -96,23 +95,24 @@ export const SideDrawer: React.FC<SideDrawerProps> = ({
     }
   };
 
-  // Switch button visibility rules
   const canShowSwitchButton = 
-    user.role === 'driver' || // Drivers can always switch back to rider
-    (user.role === 'rider' && user.driver_approved === true); // Riders only see switch if approved
+    user.role === 'driver' || 
+    (user.role === 'rider' && user.driver_approved === true);
 
   return (
-    <div className="fixed inset-0 z-50">
-      <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm animate-fade-in" onClick={onClose}></div>
+    <div 
+      className={`fixed inset-0 z-50 transition-opacity duration-500 ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+      onTransitionEnd={handleAnimationEnd}
+    >
+      <div className="absolute inset-0 bg-slate-900/60 native-blur" onClick={onClose}></div>
 
-      <div className="absolute top-0 left-0 bottom-0 w-[85%] max-w-xs bg-white shadow-2xl animate-slide-right flex flex-col">
+      <div className={`absolute top-0 left-0 bottom-0 w-[85%] max-w-xs bg-white shadow-2xl transition-transform duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] flex flex-col ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         
-        {/* Elite Header */}
         <div className={`p-8 pt-12 text-white relative overflow-hidden shrink-0 ${user.role === 'rider' ? 'bg-brand-blue' : 'bg-brand-orange'}`}>
            <div className="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]"></div>
            
            <div className="relative z-10">
-              <div className="w-16 h-16 rounded-3xl bg-white/20 backdrop-blur-md mb-4 p-1 border border-white/30 rotate-3">
+              <div className="w-16 h-16 rounded-3xl bg-white/20 backdrop-blur-md mb-4 p-1 border border-white/30 rotate-3 haptic-press">
                  <img src={user.avatar || `https://ui-avatars.com/api/?name=${user.name}&background=random`} alt={user.name} className="w-full h-full rounded-2xl object-cover bg-slate-800" />
               </div>
               <h2 className="text-xl font-black tracking-tight italic">RideIn Elite</h2>
@@ -123,7 +123,6 @@ export const SideDrawer: React.FC<SideDrawerProps> = ({
            </div>
         </div>
 
-        {/* Categories */}
         <div className="flex-1 overflow-y-auto py-6 space-y-8 no-scrollbar">
            {zones.map(zone => (
              <div key={zone.name} className="space-y-1">
@@ -133,7 +132,7 @@ export const SideDrawer: React.FC<SideDrawerProps> = ({
                      <button
                        key={item.id}
                        onClick={() => { onNavigate(item.id); onClose(); }}
-                       className={`w-full flex items-center gap-4 p-3.5 rounded-2xl transition-all relative group ${activeView === item.id ? (user.role === 'rider' ? 'bg-blue-50 text-brand-blue' : 'bg-orange-50 text-brand-orange') : 'text-slate-600 hover:bg-slate-50'}`}
+                       className={`w-full flex items-center gap-4 p-3.5 rounded-2xl transition-all haptic-press relative group ${activeView === item.id ? (user.role === 'rider' ? 'bg-blue-50 text-brand-blue' : 'bg-orange-50 text-brand-orange') : 'text-slate-600 hover:bg-slate-50'}`}
                      >
                         {activeView === item.id && <div className={`absolute left-0 top-3 bottom-3 w-1 rounded-r-full ${user.role === 'rider' ? 'bg-brand-blue' : 'bg-brand-orange'}`}></div>}
                         <div className={`w-8 flex justify-center ${activeView === item.id ? (user.role === 'rider' ? 'text-brand-blue' : 'text-brand-orange') : 'text-gray-400 group-hover:text-slate-600'}`}>
@@ -151,7 +150,7 @@ export const SideDrawer: React.FC<SideDrawerProps> = ({
                 <button 
                   onClick={handleSwitchMode}
                   disabled={isSyncing}
-                  className="w-full py-4 rounded-2xl bg-slate-900 text-white font-black text-[10px] uppercase tracking-[0.2em] shadow-xl shadow-slate-900/20 active:scale-95 transition-all flex items-center justify-center gap-3 disabled:opacity-50"
+                  className="w-full py-4 rounded-2xl bg-slate-900 text-white font-black text-[10px] uppercase tracking-[0.2em] shadow-xl shadow-slate-900/20 active:scale-95 haptic-press transition-all flex items-center justify-center gap-3 disabled:opacity-50"
                 >
                    <i className={`fa-solid fa-arrows-rotate ${isSyncing ? 'animate-spin' : ''}`}></i>
                    <span>{isSyncing ? 'Synchronizing...' : (user.role === 'rider' ? 'Switch to Driver' : 'Switch to Rider')}</span>
@@ -174,9 +173,8 @@ export const SideDrawer: React.FC<SideDrawerProps> = ({
            )}
         </div>
 
-        {/* Footer */}
         <div className="p-6 border-t border-gray-100 bg-gray-50/50">
-           <button onClick={onLogout} className="w-full py-3 text-red-500 font-black text-[10px] uppercase tracking-[0.3em] hover:bg-red-50 rounded-xl transition-colors">
+           <button onClick={onLogout} className="w-full py-3 text-red-500 font-black text-[10px] uppercase tracking-[0.3em] hover:bg-red-50 rounded-xl haptic-press transition-colors">
               Secure Logout
            </button>
         </div>

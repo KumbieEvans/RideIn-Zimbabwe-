@@ -72,7 +72,7 @@ export const OnboardingView: React.FC<OnboardingViewProps> = ({ role, onComplete
   const step = steps[currentStep];
 
   return (
-    <div className="fixed inset-0 z-[500] bg-white flex flex-col font-sans overflow-hidden">
+    <div className="fixed inset-0 z-[500] bg-white flex flex-col font-sans overflow-y-auto">
       {/* Background Stylized Number */}
       <div className="absolute top-0 right-0 p-10 pointer-events-none select-none overflow-hidden h-full flex items-center">
         <span 
@@ -85,9 +85,9 @@ export const OnboardingView: React.FC<OnboardingViewProps> = ({ role, onComplete
         </span>
       </div>
 
-      <div className="flex-1 flex flex-col px-10 pt-24 pb-12 relative z-10">
+      <div className="flex-1 flex flex-col px-10 pt-24 pb-12 relative z-10 min-h-screen">
         {/* Top Navigation HUD */}
-        <div className="flex items-center justify-between mb-16">
+        <div className="flex items-center justify-between mb-16 shrink-0">
           <div className="flex gap-1.5">
             {steps.map((_, i) => (
               <div 
@@ -102,7 +102,7 @@ export const OnboardingView: React.FC<OnboardingViewProps> = ({ role, onComplete
         </div>
 
         {/* Content Section */}
-        <div className="flex-1 flex flex-col justify-center max-w-sm">
+        <div className="flex-1 flex flex-col justify-center max-w-sm mb-12">
           <div className="mb-6 animate-fade-in">
             <span className={`text-[10px] font-black uppercase tracking-[0.5em] mb-4 block ${step.color}`}>
               {step.protocolName}
@@ -119,7 +119,7 @@ export const OnboardingView: React.FC<OnboardingViewProps> = ({ role, onComplete
         </div>
 
         {/* Action HUD */}
-        <div className="mt-auto space-y-6">
+        <div className="mt-auto space-y-6 shrink-0">
           <Button 
             variant={isLastStep ? "primary" : "outline"} 
             className={`w-full py-7 rounded-2xl shadow-2xl transition-all duration-300 font-black uppercase tracking-[0.25em] text-[11px] border-2 ${

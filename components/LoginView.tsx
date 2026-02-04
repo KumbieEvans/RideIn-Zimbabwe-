@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { User, VehicleType } from '../types';
 import { PASSENGER_CATEGORIES, FREIGHT_CATEGORIES, ZIM_CITIES } from '../constants';
@@ -356,7 +355,7 @@ export const LoginView: React.FC<{ onLogin: (user: User) => void }> = ({ onLogin
   );
 
   return (
-    <div className="min-h-screen bg-white flex flex-col p-6 safe-top safe-bottom">
+    <div className="min-h-screen bg-white flex flex-col p-6 safe-top safe-bottom overflow-y-auto">
       <div className="w-full max-w-sm mx-auto flex-1 flex flex-col">
         {/* Header Branding */}
         <div className="pt-8 mb-12 flex flex-col items-center justify-center text-center">
