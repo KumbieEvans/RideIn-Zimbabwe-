@@ -1,3 +1,4 @@
+
 // Safety: Shim process.env for browser environments immediately
 (window as any).process = (window as any).process || { env: {} };
 (window as any).process.env = (window as any).process.env || {};
@@ -57,7 +58,7 @@ const App: React.FC = () => {
   const [hasSeenIntro, setHasSeenIntro] = useState<boolean | null>(null);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [ablyStatus, setAblyStatus] = useState(ablyService.connectionState);
-  const [viewKey, setViewKey] = useState(0); // For transition triggering
+  const [viewKey, setViewKey] = useState(0); 
 
   useEffect(() => {
     const splashTimer = setTimeout(() => setShowSplash(false), 3000);
@@ -70,6 +71,13 @@ const App: React.FC = () => {
     const initAuth = async () => {
       const seen = localStorage.getItem('ridein_intro_seen');
       setHasSeenIntro(seen === 'true');
+
+      // Purge stale user cache if it contains deprecated 'email' parameter
+      const cached = localStorage.getItem('ridein_user_cache');
+      if (cached && cached.includes('"email"')) {
+        console.debug("Purging legacy cache with 'email' param...");
+        localStorage.removeItem('ridein_user_cache');
+      }
 
       const token = localStorage.getItem('ridein_auth_token');
       if (!token) {
@@ -84,8 +92,8 @@ const App: React.FC = () => {
           xanoService.logout();
         }
       } catch (e) {
-        const cached = localStorage.getItem('ridein_user_cache');
-        if (cached) setUser(JSON.parse(cached));
+        const cachedUser = localStorage.getItem('ridein_user_cache');
+        if (cachedUser) setUser(JSON.parse(cachedUser));
       } finally {
         setAuthLoading(false);
       }
@@ -116,7 +124,7 @@ const App: React.FC = () => {
     } else {
       ablyService.disconnect();
     }
-    setViewKey(v => v + 1); // Trigger transition on user change
+    setViewKey(v => v + 1); 
   }, [user, isOnline]);
 
   const handleLogin = (newUser: User) => setUser(newUser);

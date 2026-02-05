@@ -2,15 +2,8 @@
 import { Trip, TripStatus, User, UserRole, Bid } from '../types';
 import { ablyService } from './ably';
 
-/**
- * XANO API CONFIGURATION
- * Now pointing to the secure server-side proxy
- */
 const PROXY_BASE = '/.netlify/functions/xano';
 
-/**
- * xanoRequest: Standardized fetch wrapper for Xano via Proxy.
- */
 async function xanoRequest<T>(endpoint: string, method: string = 'GET', body?: any): Promise<T> {
   const token = localStorage.getItem('ridein_auth_token');
   const url = `${PROXY_BASE}${endpoint}`;
@@ -45,10 +38,28 @@ async function xanoRequest<T>(endpoint: string, method: string = 'GET', body?: a
 
 export const xanoService = {
   async signup(userData: Partial<User>, pin: string): Promise<User> {
+    // Surgically build payload to ensure no 'email' or other unsupported params are passed
+    const payload: any = {
+      name: userData.name,
+      phone: userData.phone,
+      role: userData.role,
+      city: userData.city,
+      password: pin
+    };
+
+    if (userData.role === 'driver') {
+      payload.age = userData.age;
+      payload.gender = userData.gender;
+      payload.maritalStatus = userData.maritalStatus;
+      payload.religion = userData.religion;
+      payload.personality = userData.personality;
+      payload.vehicle = userData.vehicle;
+    }
+
     const res = await xanoRequest<{ authToken: string, user: User }>(
       `/auth/signup`, 
       'POST', 
-      { ...userData, password: pin }
+      payload
     );
     this.saveSession(res.authToken, res.user);
     return res.user;
@@ -67,7 +78,10 @@ export const xanoService = {
   async getMe(): Promise<User | null> {
     try {
       const user = await xanoRequest<User>(`/auth/me`, 'GET');
-      if (user) localStorage.setItem('ridein_user_cache', JSON.stringify(user));
+      if (user) {
+        // Clean up cached user object to ensure it matches current types
+        localStorage.setItem('ridein_user_cache', JSON.stringify(user));
+      }
       return user;
     } catch (e) { 
       return null; 

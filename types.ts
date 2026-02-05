@@ -59,7 +59,7 @@ export interface User {
   token?: string;
   driver_profile_exists?: boolean;
   driver_verified?: boolean;
-  driver_approved?: boolean; // New specific field for role-aware routing
+  driver_approved?: boolean; 
   driver_status?: 'pending' | 'approved' | 'rejected';
   force_rider_mode?: boolean;
   account_status?: 'active' | 'suspended' | 'banned';
@@ -71,7 +71,7 @@ export interface Bid {
   driverName: string;
   driverRating: number;
   driverAvatar?: string;
-  amount: number; // This maps to offer_price in backend
+  amount: number; 
   eta: string;
   vehicleInfo: string;
   isFavourite?: boolean;
@@ -118,7 +118,6 @@ export interface Trip {
   isGuestBooking?: boolean;
   guestName?: string;
   guestPhone?: string;
-  // Freight specific enhancements
   itemDescription?: string;
   requiresAssistance?: boolean;
   cargoPhotos?: string[];
