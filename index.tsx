@@ -3,14 +3,6 @@
 (window as any).process = (window as any).process || { env: {} };
 (window as any).process.env = (window as any).process.env || {};
 
-// Initialize global debug log
-(window as any).__RIDEIN_DEBUG_LOGS = [];
-const pushLog = (log: any) => {
-  const logs = (window as any).__RIDEIN_DEBUG_LOGS;
-  logs.unshift({ ...log, timestamp: new Date().toISOString() });
-  if (logs.length > 50) logs.pop();
-};
-
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App';
@@ -45,22 +37,22 @@ function deepScrub(obj: any): any {
  */
 const originalFetch = window.fetch;
 window.fetch = async function(resource: string | Request | URL, config?: RequestInit) {
-  const startTime = Date.now();
   let urlString = "";
-  let currentConfig: RequestInit = config || {};
+  let currentConfig: RequestInit = { ...(config || {}) };
 
   try {
     if (resource instanceof Request) {
-      urlString = resource.url;
-      // Merge headers from Request object if config doesn't have them
-      const reqHeaders = new Headers(resource.headers);
+      // CLONE THE REQUEST to avoid "Body has been used" errors
+      const clonedReq = resource.clone();
+      urlString = clonedReq.url;
+      
+      const reqHeaders = new Headers(clonedReq.headers);
       if (currentConfig.headers) {
         const configHeaders = new Headers(currentConfig.headers);
         configHeaders.forEach((v, k) => reqHeaders.set(k, v));
       }
       currentConfig.headers = reqHeaders;
-      // Note: We don't easily scrub the body of a Request object without consuming the stream,
-      // but in this app, xanoRequest passes string bodies in config.
+      currentConfig.method = clonedReq.method;
     } else {
       urlString = resource.toString();
     }
@@ -106,32 +98,14 @@ window.fetch = async function(resource: string | Request | URL, config?: Request
       headers.delete('X-User-Email');
       headers.delete('X-Email');
       headers.delete('reference-email');
+      headers.delete('reference_email');
       currentConfig.headers = headers;
     }
 
-    const response = await originalFetch(urlString, currentConfig);
-    const duration = Date.now() - startTime;
-    
-    pushLog({
-      type: 'request',
-      method: currentConfig.method || 'GET',
-      url: urlString,
-      status: response.status,
-      duration: `${duration}ms`,
-      ok: response.ok
-    });
-
-    return response;
+    return await originalFetch(urlString || resource, currentConfig);
   } catch (err: any) {
-    const duration = Date.now() - startTime;
-    pushLog({
-      type: 'error',
-      method: currentConfig.method || 'GET',
-      url: urlString || 'unknown',
-      error: err.message,
-      duration: `${duration}ms`
-    });
     console.error('[Interceptor Critical Error]', err);
+    // On failure, attempt one last standard fetch without interception logic
     return originalFetch(resource, config);
   }
 };

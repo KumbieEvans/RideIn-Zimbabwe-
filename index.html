@@ -32,9 +32,9 @@
   <script type="importmap">
 {
   "imports": {
-    "react": "https://esm.sh/react@19.0.0",
-    "react-dom": "https://esm.sh/react-dom@19.0.0",
-    "react-dom/client": "https://esm.sh/react-dom@19.0.0/client",
+    "react": "https://esm.sh/react@19.0.0?external=*",
+    "react-dom": "https://esm.sh/react-dom@19.0.0?external=*",
+    "react-dom/client": "https://esm.sh/react-dom@19.0.0/client?external=*",
     "@google/genai": "https://esm.sh/@google/genai@1.3.0",
     "mapbox-gl": "https://esm.sh/mapbox-gl@3.9.1",
     "ably": "https://esm.sh/ably@1.2.49",
@@ -50,28 +50,24 @@
 }
 </script>
 </head>
-<body class="bg-brand-blue text-gray-900 antialiased overflow-y-auto">
+<body class="bg-[#001D3D] text-gray-900 antialiased overflow-y-auto">
   <div id="root"></div>
   
   <script>
+    // Emergency Error Catcher for Module Resolution Failures
     window.addEventListener('error', function(e) {
-      if (e.target && e.target.tagName === 'SCRIPT' && e.target.src) {
-        const scriptSrc = e.target.src;
-        console.error('Critical Resource Failure:', scriptSrc);
-        
-        setTimeout(() => {
-          const root = document.getElementById('root');
-          if (root && !root.innerHTML.trim()) {
-            document.body.innerHTML = `
-              <div style="height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#002B5B;color:white;text-align:center;padding:20px;font-family:sans-serif;">
-                <i class="fa-solid fa-triangle-exclamation" style="font-size:48px;color:#FF5F00;margin-bottom:20px;"></i>
-                <h1 style="font-weight:900;margin-bottom:10px;font-style:italic;letter-spacing:-0.05em;">RIDEIN BOOT ERROR</h1>
-                <p style="font-size:12px;opacity:0.7;max-width:300px;line-height:1.6;">Failed to resolve node: ${scriptSrc}.<br>This may be due to a strict network firewall or an interrupted connection.</p>
-                <button onclick="window.location.reload()" style="margin-top:30px;padding:16px 32px;background:#FF5F00;border:none;color:white;font-weight:bold;border-radius:16px;cursor:pointer;text-transform:uppercase;letter-spacing:0.1em;box-shadow:0 10px 20px rgba(255,95,0,0.2);">Retry Uplink</button>
-              </div>
-            `;
-          }
-        }, 3000);
+      if (e.message.includes('import') || e.message.includes('module')) {
+        const root = document.getElementById('root');
+        if (root && !root.innerHTML.trim()) {
+           root.innerHTML = `
+             <div style="height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#001D3D;color:white;text-align:center;padding:40px;font-family:sans-serif;">
+               <div style="font-size:48px;margin-bottom:20px;">⚡</div>
+               <h1 style="font-weight:900;margin-bottom:10px;color:#FF5F00;">BOOT SEQUENCE FAILED</h1>
+               <p style="font-size:14px;opacity:0.7;max-width:320px;line-height:1.6;">${e.message}</p>
+               <button onclick="window.location.reload()" style="margin-top:30px;padding:16px 32px;background:#FF5F00;border:none;color:white;font-weight:bold;border-radius:16px;cursor:pointer;text-transform:uppercase;letter-spacing:0.1em;">Force Restart</button>
+             </div>
+           `;
+        }
       }
     }, true);
   </script>

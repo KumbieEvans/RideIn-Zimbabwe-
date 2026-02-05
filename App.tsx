@@ -20,10 +20,10 @@ const lazyLoad = <T extends React.ComponentType<any>>(
       .catch(error => {
         console.error(`Failed to load ${componentName}`, error);
         const Fallback = (() => (
-          <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center bg-gray-50">
-            <h3 className="font-bold text-lg text-gray-900 mb-2">Resource Unavailable</h3>
-            <p className="text-sm text-gray-500 mb-6">This component couldn't be loaded. Check your connection.</p>
-            <button onClick={() => window.location.reload()} className="px-8 py-4 bg-brand-blue text-white rounded-2xl font-bold">Retry Load</button>
+          <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center bg-[#001D3D] text-white">
+            <h3 className="font-black text-lg mb-2">Resource Offline</h3>
+            <p className="text-sm text-white/50 mb-6">Component protocol failed to resolve.</p>
+            <button onClick={() => window.location.reload()} className="px-8 py-4 bg-brand-orange text-white rounded-2xl font-bold">Retry Link</button>
           </div>
         )) as unknown as T;
         return { default: Fallback };
@@ -61,7 +61,7 @@ const App: React.FC = () => {
   const [viewKey, setViewKey] = useState(0); 
 
   useEffect(() => {
-    const splashTimer = setTimeout(() => setShowSplash(false), 3000);
+    const splashTimer = setTimeout(() => setShowSplash(false), 2500);
     
     const handleOnline = () => setIsOnline(true);
     const handleOffline = () => setIsOnline(false);
@@ -69,45 +69,39 @@ const App: React.FC = () => {
     window.addEventListener('offline', handleOffline);
 
     const initAuth = async () => {
-      // 1. Snapshot-based storage cleanup
-      const storageKeys = Object.keys(localStorage);
-      storageKeys.forEach(key => {
-        const val = localStorage.getItem(key);
-        if (val && val.toLowerCase().includes('"email"')) {
-          console.debug(`[Security] Purged localStorage key: ${key}`);
-          localStorage.removeItem(key);
-        }
-      });
-
-      const sessionKeys = Object.keys(sessionStorage);
-      sessionKeys.forEach(key => {
-        const val = sessionStorage.getItem(key);
-        if (val && val.toLowerCase().includes('"email"')) {
-          sessionStorage.removeItem(key);
-        }
-      });
-
-      const seen = localStorage.getItem('ridein_intro_seen');
-      setHasSeenIntro(seen === 'true');
-
-      const token = localStorage.getItem('ridein_auth_token');
-      if (!token) {
-        setAuthLoading(false);
-        return;
-      }
-      
       try {
+        // 1. Snapshot-based storage cleanup
+        const storageKeys = Object.keys(localStorage);
+        storageKeys.forEach(key => {
+          try {
+            const val = localStorage.getItem(key);
+            if (val && val.toLowerCase().includes('"email"')) {
+              localStorage.removeItem(key);
+            }
+          } catch (e) {}
+        });
+
+        const seen = localStorage.getItem('ridein_intro_seen');
+        setHasSeenIntro(seen === 'true');
+
+        const token = localStorage.getItem('ridein_auth_token');
+        if (!token) {
+          setAuthLoading(false);
+          return;
+        }
+        
         const currentUser = await xanoService.getMe();
         if (currentUser) {
           setUser(currentUser);
         } else {
-          xanoService.logout();
+          // If token exists but getMe fails, we might still have a cached user
+          const cachedUser = localStorage.getItem('ridein_user_cache');
+          if (cachedUser) {
+            setUser(JSON.parse(cachedUser));
+          }
         }
       } catch (e) {
-        const retryCache = localStorage.getItem('ridein_user_cache');
-        if (retryCache) {
-           setUser(JSON.parse(retryCache));
-        }
+        console.warn("[App] Auth Init Warning:", e);
       } finally {
         setAuthLoading(false);
       }
@@ -146,9 +140,11 @@ const App: React.FC = () => {
   const handleUserUpdate = useCallback((updatedUser: User) => setUser(updatedUser), []);
 
   const completeOnboarding = () => {
-    localStorage.setItem('ridein_intro_seen', 'true');
-    setHasSeenIntro(true);
-    setViewKey(v => v + 1);
+    try {
+      localStorage.setItem('ridein_intro_seen', 'true');
+      setHasSeenIntro(true);
+      setViewKey(v => v + 1);
+    } catch (e) {}
   };
 
   if (showSplash || authLoading || hasSeenIntro === null) return <SplashAnimation />;

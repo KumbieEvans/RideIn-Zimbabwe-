@@ -15,9 +15,6 @@ export const LoginView: React.FC<{ onLogin: (user: User) => void }> = ({ onLogin
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  const [showDiagnostics, setShowDiagnostics] = useState(false);
-  const diagTriggerCount = useRef(0);
-  const diagTimer = useRef<any>(null);
 
   // Security Obfuscated state
   const [raw_p, setRawP] = useState('');
@@ -37,20 +34,6 @@ export const LoginView: React.FC<{ onLogin: (user: User) => void }> = ({ onLogin
   const [vehicleType, setVehicleType] = useState<VehicleType>(VehicleType.PASSENGER);
   const [vehicleCategory, setVehicleCategory] = useState('');
   const [photos, setPhotos] = useState<(string | null)[]>([null, null, null, null]);
-
-  const handleLogoClick = () => {
-    diagTriggerCount.current++;
-    if (diagTimer.current) clearTimeout(diagTimer.current);
-    
-    diagTimer.current = setTimeout(() => {
-      diagTriggerCount.current = 0;
-    }, 1000);
-
-    if (diagTriggerCount.current >= 5) {
-      setShowDiagnostics(true);
-      diagTriggerCount.current = 0;
-    }
-  };
 
   const handleNext = (e: React.FormEvent) => {
     e.preventDefault();
@@ -415,7 +398,7 @@ export const LoginView: React.FC<{ onLogin: (user: User) => void }> = ({ onLogin
           <i className="fa-solid fa-microchip text-[12rem] rotate-12"></i>
         </div>
 
-        <div onClick={handleLogoClick} className="mb-12 cursor-pointer select-none relative z-10">
+        <div className="mb-12 select-none relative z-10">
           <h1 className="text-5xl font-black text-brand-blue italic tracking-tighter">RideIn</h1>
           <div className="h-1.5 w-12 bg-brand-orange mt-2 rounded-full shadow-[0_4px_10px_rgba(255,95,0,0.3)]"></div>
         </div>
@@ -451,31 +434,6 @@ export const LoginView: React.FC<{ onLogin: (user: User) => void }> = ({ onLogin
           </div>
         </form>
       </div>
-
-      {showDiagnostics && (
-        <div className="fixed inset-0 z-[1000] bg-black/95 text-green-500 font-mono text-[10px] p-4 flex flex-col overflow-hidden animate-fade-in">
-          <div className="flex justify-between items-center mb-4 border-b border-green-900 pb-2">
-            <span className="font-bold uppercase tracking-widest">RIDEIN_DEBUG_CONSOLE v1.0</span>
-            <button onClick={() => setShowDiagnostics(false)} className="px-3 py-1 bg-green-900 text-white rounded">CLOSE</button>
-          </div>
-          <div className="flex-1 overflow-y-auto no-scrollbar space-y-2">
-            {((window as any).__RIDEIN_DEBUG_LOGS || []).map((log: any, i: number) => (
-              <div key={i} className={`p-2 border-b border-white/5 ${log.type === 'error' ? 'text-red-400' : 'text-green-500'}`}>
-                <div className="flex justify-between font-bold mb-1">
-                  <span>[{log.timestamp}] {log.method} {log.type}</span>
-                  <span>{log.duration}</span>
-                </div>
-                <div className="opacity-70 break-all">{log.url}</div>
-                {log.status && <div className="font-bold">STATUS: {log.status} {log.ok ? 'OK' : 'FAIL'}</div>}
-                {log.error && <div className="text-red-500 font-bold mt-1">ERR: {log.error}</div>}
-              </div>
-            ))}
-            {((window as any).__RIDEIN_DEBUG_LOGS || []).length === 0 && (
-              <div className="text-white/20 text-center pt-20">NO NETWORK DATA CAPTURED</div>
-            )}
-          </div>
-        </div>
-      )}
     </div>
   );
 };
