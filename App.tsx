@@ -18,38 +18,25 @@ const lazyLoad = <T extends React.ComponentType<any>>(
     importFunc()
       .then(module => ({ default: module[componentName] as T }))
       .catch(error => {
-        console.error(`Failed to load ${componentName}`, error);
-        const Fallback = (() => (
-          <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center bg-[#001D3D] text-white">
-            <h3 className="font-black text-lg mb-2">Resource Offline</h3>
-            <p className="text-sm text-white/50 mb-6">Component protocol failed to resolve.</p>
-            <button onClick={() => window.location.reload()} className="px-8 py-4 bg-brand-orange text-white rounded-2xl font-bold">Retry Link</button>
+        console.error(`[Boot] Resource Offline: ${componentName}`, error);
+        return { default: (() => (
+          <div className="min-h-screen flex flex-col items-center justify-center p-8 text-center bg-[#001D3D] text-white">
+            <div className="w-16 h-16 rounded-3xl bg-red-500/20 flex items-center justify-center mb-6 text-red-500">
+              <i className="fa-solid fa-link-slash text-2xl"></i>
+            </div>
+            <h3 className="font-black text-xl mb-2 italic">PROTOCOL FAILURE</h3>
+            <p className="text-xs text-white/30 mb-8 uppercase tracking-widest max-w-xs">The component node ${componentName} failed to synchronize with the core.</p>
+            <button onClick={() => window.location.reload()} className="px-10 py-4 bg-brand-orange text-white rounded-2xl font-black uppercase tracking-[0.2em] text-[10px]">Restart Uplink</button>
           </div>
-        )) as unknown as T;
-        return { default: Fallback };
+        )) as unknown as T };
       })
   );
 };
 
-interface HomeViewProps {
-  user: User;
-  onLogout: () => void;
-  onUserUpdate: (user: User) => void;
-}
-
 const LoginView = lazyLoad<React.FC<{ onLogin: (user: User) => void }>>(() => import('./components/LoginView'), 'LoginView');
-const RiderHomeView = lazyLoad<React.FC<HomeViewProps>>(() => import('./components/RiderHomeView'), 'RiderHomeView');
-const DriverHomeView = lazyLoad<React.FC<HomeViewProps>>(() => import('./components/DriverHomeView'), 'DriverHomeView');
-const PendingApprovalView = lazyLoad<React.FC<HomeViewProps>>(() => import('./components/PendingApprovalView'), 'PendingApprovalView');
-
-const LoadingScreen = () => (
-  <div className="min-h-screen flex items-center justify-center bg-[#001D3D]">
-    <div className="flex flex-col items-center gap-4">
-      <div className="w-10 h-10 border-[3px] border-white/10 border-t-brand-orange rounded-full animate-spin"></div>
-      <p className="text-[10px] font-black text-white/20 uppercase tracking-[0.4em]">Neural Handshake...</p>
-    </div>
-  </div>
-);
+const RiderHomeView = lazyLoad<React.FC<any>>(() => import('./components/RiderHomeView'), 'RiderHomeView');
+const DriverHomeView = lazyLoad<React.FC<any>>(() => import('./components/DriverHomeView'), 'DriverHomeView');
+const PendingApprovalView = lazyLoad<React.FC<any>>(() => import('./components/PendingApprovalView'), 'PendingApprovalView');
 
 const App: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
@@ -70,17 +57,6 @@ const App: React.FC = () => {
 
     const initAuth = async () => {
       try {
-        // 1. Snapshot-based storage cleanup
-        const storageKeys = Object.keys(localStorage);
-        storageKeys.forEach(key => {
-          try {
-            const val = localStorage.getItem(key);
-            if (val && val.toLowerCase().includes('"email"')) {
-              localStorage.removeItem(key);
-            }
-          } catch (e) {}
-        });
-
         const seen = localStorage.getItem('ridein_intro_seen');
         setHasSeenIntro(seen === 'true');
 
@@ -90,18 +66,17 @@ const App: React.FC = () => {
           return;
         }
         
-        const currentUser = await xanoService.getMe();
+        // Attempt secure handshake
+        const currentUser = await xanoService.getMe().catch(() => null);
         if (currentUser) {
           setUser(currentUser);
         } else {
-          // If token exists but getMe fails, we might still have a cached user
-          const cachedUser = localStorage.getItem('ridein_user_cache');
-          if (cachedUser) {
-            setUser(JSON.parse(cachedUser));
-          }
+          // Fallback to cache if network is unstable but token exists
+          const cached = localStorage.getItem('ridein_user_cache');
+          if (cached) setUser(JSON.parse(cached));
         }
       } catch (e) {
-        console.warn("[App] Auth Init Warning:", e);
+        console.warn("[App] Auth Handshake Interrupted");
       } finally {
         setAuthLoading(false);
       }
@@ -124,7 +99,6 @@ const App: React.FC = () => {
   useEffect(() => {
     if (user && isOnline) {
       if (user.account_status === 'suspended' || user.account_status === 'banned') {
-         alert("Access Protocol Terminated: Your account is restricted.");
          xanoService.logout();
          return;
       }
@@ -139,51 +113,36 @@ const App: React.FC = () => {
   const handleLogout = useCallback(() => xanoService.logout(), []);
   const handleUserUpdate = useCallback((updatedUser: User) => setUser(updatedUser), []);
 
-  const completeOnboarding = () => {
-    try {
-      localStorage.setItem('ridein_intro_seen', 'true');
-      setHasSeenIntro(true);
-      setViewKey(v => v + 1);
-    } catch (e) {}
-  };
-
   if (showSplash || authLoading || hasSeenIntro === null) return <SplashAnimation />;
-
-  const showConnAlert = !isOnline || ablyStatus === 'connecting' || ablyStatus === 'disconnected' || ablyStatus === 'suspended';
 
   const renderView = () => {
     if (!user) {
-      if (!hasSeenIntro) {
-        return <PublicOnboardingView onComplete={completeOnboarding} />;
-      }
-      return <LoginView onLogin={handleLogin} />;
+      return hasSeenIntro ? <LoginView onLogin={handleLogin} /> : <PublicOnboardingView onComplete={() => {
+        localStorage.setItem('ridein_intro_seen', 'true');
+        setHasSeenIntro(true);
+      }} />;
     }
     
-    if (user.role === 'rider') {
-      return <RiderHomeView user={user} onLogout={handleLogout} onUserUpdate={handleUserUpdate} />;
-    }
+    if (user.role === 'rider') return <RiderHomeView user={user} onLogout={handleLogout} onUserUpdate={handleUserUpdate} />;
     
     if (user.role === 'driver') {
-      if (user.driver_approved === true || user.driver_status === 'approved') {
-        return <DriverHomeView user={user} onLogout={handleLogout} onUserUpdate={handleUserUpdate} />;
-      }
-      return <PendingApprovalView user={user} onLogout={handleLogout} onUserUpdate={handleUserUpdate} />;
+      const isApproved = user.driver_approved === true || user.driver_status === 'approved';
+      return isApproved 
+        ? <DriverHomeView user={user} onLogout={handleLogout} onUserUpdate={handleUserUpdate} />
+        : <PendingApprovalView user={user} onLogout={handleLogout} onUserUpdate={handleUserUpdate} />;
     }
     
     return <LoginView onLogin={handleLogin} />;
   };
 
   return (
-    <Suspense fallback={<LoadingScreen />}>
-      {showConnAlert && user && (
-        <div className="fixed top-0 left-0 right-0 z-[110] bg-brand-orange text-white px-4 py-3 flex items-center justify-center gap-3 animate-slide-down shadow-lg">
-           <i className={`fa-solid ${!isOnline ? 'fa-wifi-slash' : 'fa-circle-notch fa-spin'} text-[10px]`}></i>
-           <p className="text-[10px] font-black uppercase tracking-[0.3em]">
-              {!isOnline ? 'Offline Protocol' : `Node Status: ${ablyStatus.toUpperCase()}`}
-           </p>
+    <Suspense fallback={<div className="min-h-screen bg-[#001D3D]" />}>
+      {(!isOnline || ablyStatus !== 'connected') && user && (
+        <div className="fixed top-0 left-0 right-0 z-[110] bg-brand-orange text-white px-4 py-2 flex items-center justify-center gap-3 shadow-lg">
+           <i className="fa-solid fa-circle-notch fa-spin text-[10px]"></i>
+           <p className="text-[9px] font-black uppercase tracking-[0.3em]">Syncing Neural Node...</p>
         </div>
       )}
-      
       <div key={viewKey} className="animate-fade-in h-full">
         {renderView()}
       </div>

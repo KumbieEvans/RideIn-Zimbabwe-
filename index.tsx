@@ -21,9 +21,7 @@ function deepScrub(obj: any): any {
   
   for (const key in obj) {
     const k = key.toLowerCase();
-    // Block anything resembling the blacklisted keys
     if (blacklist.some(forbidden => k === forbidden || k.includes('reference-email'))) {
-      console.warn(`[Interceptor] Terminated unauthorized parameter: ${key}`);
       continue;
     }
     clean[key] = deepScrub(obj[key]);
@@ -32,24 +30,21 @@ function deepScrub(obj: any): any {
 }
 
 /**
- * TACTICAL FETCH FIREWALL
- * Intercepts every outgoing request to ensure absolute cleanliness.
+ * STRENGTHENED FETCH FIREWALL
+ * Intercepts requests with strict content-type awareness.
  */
 const originalFetch = window.fetch;
 window.fetch = async function(resource: string | Request | URL, config?: RequestInit) {
   let urlString = "";
-  let currentConfig: RequestInit = { ...(config || {}) };
+  let currentConfig: RequestInit = config ? { ...config } : {};
 
   try {
     if (resource instanceof Request) {
-      // CLONE THE REQUEST to avoid "Body has been used" errors
       const clonedReq = resource.clone();
       urlString = clonedReq.url;
-      
       const reqHeaders = new Headers(clonedReq.headers);
       if (currentConfig.headers) {
-        const configHeaders = new Headers(currentConfig.headers);
-        configHeaders.forEach((v, k) => reqHeaders.set(k, v));
+        new Headers(currentConfig.headers).forEach((v, k) => reqHeaders.set(k, v));
       }
       currentConfig.headers = reqHeaders;
       currentConfig.method = clonedReq.method;
@@ -57,55 +52,40 @@ window.fetch = async function(resource: string | Request | URL, config?: Request
       urlString = resource.toString();
     }
 
-    // 1. Scrub Query Parameters from URL
+    // 1. Scrub Query Parameters
     if (urlString.toLowerCase().includes('email')) {
       try {
         const urlObj = new URL(urlString, window.location.origin);
         const params = new URLSearchParams(urlObj.search);
         let changed = false;
-        const forbidden = ['email', 'user_email', 'mail', 'e-mail', 'reference-email', 'reference_email'];
-        
-        forbidden.forEach(key => {
-          if (params.has(key)) {
-            params.delete(key);
-            changed = true;
-          }
+        ['email', 'user_email', 'mail', 'e-mail', 'reference-email', 'reference_email'].forEach(key => {
+          if (params.has(key)) { params.delete(key); changed = true; }
         });
-
-        if (changed) {
-          urlObj.search = params.toString();
-          urlString = urlObj.toString();
-        }
-      } catch (e) {
-        urlString = urlString.replace(/([?&])email=[^&]*/gi, '');
-      }
+        if (changed) { urlObj.search = params.toString(); urlString = urlObj.toString(); }
+      } catch (e) {}
     }
 
-    // 2. Scrub Body (Only if JSON string)
-    if (currentConfig.body && typeof currentConfig.body === 'string') {
+    // 2. Scrub Body (JSON Only)
+    const isJson = (currentConfig.headers instanceof Headers 
+      ? currentConfig.headers.get('Content-Type') 
+      : (currentConfig.headers as any)?.['Content-Type'])?.includes('application/json');
+
+    if (isJson && typeof currentConfig.body === 'string') {
       try {
         const parsed = JSON.parse(currentConfig.body);
-        const scrubbed = deepScrub(parsed);
-        currentConfig.body = JSON.stringify(scrubbed);
-      } catch (e) {
-        // Not JSON, leave as is
-      }
+        currentConfig.body = JSON.stringify(deepScrub(parsed));
+      } catch (e) {}
     }
 
     // 3. Scrub Headers
     if (currentConfig.headers) {
       const headers = new Headers(currentConfig.headers);
-      headers.delete('X-User-Email');
-      headers.delete('X-Email');
-      headers.delete('reference-email');
-      headers.delete('reference_email');
+      ['X-User-Email', 'X-Email', 'reference-email', 'reference_email'].forEach(h => headers.delete(h));
       currentConfig.headers = headers;
     }
 
-    return await originalFetch(urlString || resource, currentConfig);
+    return await originalFetch(resource instanceof Request ? resource : urlString, currentConfig);
   } catch (err: any) {
-    console.error('[Interceptor Critical Error]', err);
-    // On failure, attempt one last standard fetch without interception logic
     return originalFetch(resource, config);
   }
 };
