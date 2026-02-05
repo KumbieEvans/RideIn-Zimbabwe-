@@ -6,15 +6,18 @@ const PROXY_BASE = '/.netlify/functions/xano';
 
 /**
  * REINFORCED SCRUBBER: Recursively kills forbidden keys in responses.
+ * Specifically targets parameters known to cause Xano 'unsupported' errors.
  */
 function cleanResponse(obj: any): any {
   if (obj === null || typeof obj !== 'object') return obj;
   if (Array.isArray(obj)) return obj.map(cleanResponse);
   
   const clean: any = {};
+  const forbiddenKeys = ['email', 'mail', 'user_email', 'reference-email', 'reference_email', 'e-mail'];
+  
   for (const key in obj) {
     const k = key.toLowerCase();
-    if (k.includes('email') || k === 'mail' || k === 'user_email') continue;
+    if (forbiddenKeys.some(forbidden => k === forbidden || k.includes('reference-email'))) continue;
     clean[key] = cleanResponse(obj[key]);
   }
   return clean;
@@ -54,7 +57,6 @@ async function xanoRequest<T>(endpoint: string, method: string = 'GET', body?: a
 
 export const xanoService = {
   async signup(userData: Partial<User>, pin: string): Promise<User> {
-    // STRICT WHITELISTING: Do not pass the userData object. Rebuild it key by key.
     const payload: any = {
       name: userData.name,
       phone: userData.phone,
@@ -86,7 +88,6 @@ export const xanoService = {
   },
 
   async login(phone: string, pin: string): Promise<User> {
-    // Force specific keys
     const payload = { 
       phone, 
       password: pin 

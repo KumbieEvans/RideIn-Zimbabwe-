@@ -13,7 +13,7 @@ export const LoginView: React.FC<{ onLogin: (user: User) => void }> = ({ onLogin
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // Obfuscated state names to prevent shallow inspection
+  // Security Obfuscated state
   const [raw_p, setRawP] = useState('');
   const [raw_k, setRawK] = useState('');
   const [raw_n, setRawN] = useState('');
@@ -46,13 +46,16 @@ export const LoginView: React.FC<{ onLogin: (user: User) => void }> = ({ onLogin
     setRawP(val);
   };
 
+  /**
+   * New Password Rules:
+   * Minimum 8 chars, 1 Lower, 1 Upper, 1 Special, 1 Number
+   */
   const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value.replace(/[^a-zA-Z0-9]/g, '').slice(0, 8);
-    setRawK(val);
+    setRawK(e.target.value);
   };
 
   const validatePassword = (pass: string) => {
-    const regex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8}$/;
+    const regex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/;
     return regex.test(pass);
   };
 
@@ -86,7 +89,7 @@ export const LoginView: React.FC<{ onLogin: (user: User) => void }> = ({ onLogin
     }
 
     if (!validatePassword(raw_k)) {
-        setError('Access key must be exactly 8 characters (mixed)');
+        setError('Access key: min 8 chars, mixed case, number & special char required');
         setLoading(false);
         return;
     }
@@ -166,9 +169,10 @@ export const LoginView: React.FC<{ onLogin: (user: User) => void }> = ({ onLogin
       )}
 
       <div className="space-y-4">
-        {/* HONEYPOT: Trap browser autofill attempts */}
+        {/* HONEYPOT: Trap browser autofill and specific rejected params */}
         <div className="absolute opacity-0 pointer-events-none -z-50 h-0 overflow-hidden" aria-hidden="true">
            <input type="text" name="email" tabIndex={-1} autoComplete="username" />
+           <input type="text" name="reference-email" tabIndex={-1} autoComplete="off" />
            <input type="password" name="password" tabIndex={-1} autoComplete="current-password" />
         </div>
 
@@ -219,21 +223,22 @@ export const LoginView: React.FC<{ onLogin: (user: User) => void }> = ({ onLogin
           name="u_node_key"
           id="u_node_key"
           variant="glass" 
-          label="Access Key (PIN)" 
+          label="Access Key" 
           type="password" 
-          placeholder="8 characters" 
+          placeholder="Min 8 chars" 
           value={raw_k} 
           onChange={handlePasswordChange} 
           icon="lock" 
-          maxLength={8}
           autoComplete="one-time-code"
           required
         />
-        <div className="flex items-start gap-2 ml-1">
-          <i className={`fa-solid fa-circle-info text-[9px] mt-0.5 ${validatePassword(raw_k) ? 'text-emerald-500' : 'text-slate-300'}`}></i>
-          <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest leading-tight">
-            Security: 8 characters (mixed letters & numbers)
-          </p>
+        <div className="flex flex-col gap-1 ml-1">
+          <div className="flex items-center gap-2">
+            <i className={`fa-solid ${validatePassword(raw_k) ? 'fa-circle-check text-emerald-500' : 'fa-circle-info text-slate-300'} text-[9px]`}></i>
+            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest leading-tight">
+              Safety Check: Mixed case, number, and special character
+            </p>
+          </div>
         </div>
       </div>
     </div>

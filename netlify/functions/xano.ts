@@ -4,7 +4,7 @@ import fetch from "node-fetch";
 /**
  * PRODUCTION XANO PROXY WITH ADVANCED FIREWALL
  * Routes requests to specific API groups based on path prefixes.
- * Aggressively scrubs 'email' from Body, Query, AND Headers.
+ * Aggressively scrubs 'email' AND 'reference-email' from Body, Query, AND Headers.
  */
 export const handler = async (event: any) => {
   const headers = {
@@ -17,13 +17,12 @@ export const handler = async (event: any) => {
     return { statusCode: 200, headers, body: "" };
   }
 
-  // Segmented Environment Variables
+  // Environment Variables
   const XANO_AUTH_BASE_URL = process.env.XANO_AUTH_BASE_URL;
   const XANO_TRIPS_BASE_URL = process.env.XANO_TRIPS_BASE_URL;
   const XANO_RIDER_BASE_URL = process.env.XANO_RIDER_BASE_URL;
   const XANO_DRIVER_BASE_URL = process.env.XANO_DRIVER_BASE_URL;
 
-  // 1. Path cleanup and Routing
   const path = event.path.replace("/.netlify/functions/xano", "");
   let baseUrl = XANO_RIDER_BASE_URL; 
   if (path.startsWith("/auth") || path.startsWith("/switch-role")) {
@@ -34,7 +33,7 @@ export const handler = async (event: any) => {
     baseUrl = XANO_DRIVER_BASE_URL;
   }
   
-  // 2. SCRUB HEADERS (Crucial for blocking browser extension injection)
+  // 1. SCRUB HEADERS
   const forwardedHeaders: any = {
     "Content-Type": "application/json",
     "Accept": "application/json"
@@ -44,20 +43,14 @@ export const handler = async (event: any) => {
     forwardedHeaders["Authorization"] = event.headers.authorization;
   }
 
-  // Remove any injected email headers from the incoming event
-  Object.keys(event.headers).forEach(key => {
-    const k = key.toLowerCase();
-    if (k.includes('email') || k === 'x-user' || k === 'x-mail') {
-      console.debug(`[Proxy Firewall] Scrubbing Header: ${key}`);
-    }
-  });
-
-  // 3. SCRUB QUERY PARAMETERS
+  // 2. SCRUB QUERY PARAMETERS
   const queryParams = event.queryStringParameters || {};
   const cleanQueryParams = new URLSearchParams();
+  const forbiddenKeys = ['email', 'mail', 'user_email', 'reference-email', 'reference_email'];
+
   for (const [key, value] of Object.entries(queryParams)) {
     const k = key.toLowerCase();
-    if (k.includes('email') || k === 'mail' || k === 'user_email') {
+    if (forbiddenKeys.some(forbidden => k === forbidden || k.includes('reference-email'))) {
        console.debug(`[Proxy Firewall] Scrubbing Query: ${key}`);
        continue;
     }
@@ -66,7 +59,7 @@ export const handler = async (event: any) => {
   const queryString = cleanQueryParams.toString();
   const url = `${baseUrl}${path}${queryString ? '?' + queryString : ''}`;
 
-  // 4. SCRUB JSON BODY
+  // 3. SCRUB JSON BODY
   let scrubbedBody = event.body;
   if (event.httpMethod !== "GET" && event.body) {
     try {
@@ -78,7 +71,7 @@ export const handler = async (event: any) => {
         const clean: any = {};
         for (const key in obj) {
           const k = key.toLowerCase();
-          if (k.includes('email') || k === 'mail' || k === 'user_email') {
+          if (forbiddenKeys.some(forbidden => k === forbidden || k.includes('reference-email'))) {
             console.debug(`[Proxy Firewall] Scrubbing Body Key: ${key}`);
             continue;
           }

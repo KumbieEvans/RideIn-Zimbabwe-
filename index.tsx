@@ -10,18 +10,20 @@ import './index.css';
 
 /**
  * NUCLEAR SCRUBBER: Recursively removes all 'email' related keys.
- * Handles objects, arrays, and nested structures.
+ * Explicitly targets 'reference-email' which causes backend errors.
  */
 function deepScrub(obj: any): any {
   if (obj === null || typeof obj !== 'object') return obj;
   if (Array.isArray(obj)) return obj.map(deepScrub);
   
   const clean: any = {};
+  const blacklist = ['email', 'user_email', 'mail', 'e-mail', 'reference-email', 'reference_email'];
+  
   for (const key in obj) {
     const k = key.toLowerCase();
-    // Block anything resembling email
-    if (k.includes('email') || k === 'mail' || k === 'user_email' || k === 'e-mail') {
-      console.warn(`[Interceptor] Blocked key leakage: ${key}`);
+    // Block anything resembling the blacklisted keys
+    if (blacklist.some(forbidden => k === forbidden || k.includes('reference-email'))) {
+      console.warn(`[Interceptor] Terminated unauthorized parameter: ${key}`);
       continue;
     }
     clean[key] = deepScrub(obj[key]);
@@ -39,12 +41,12 @@ window.fetch = async function(resource: string | Request | URL, config?: Request
     let url = (resource instanceof Request) ? resource.url : resource.toString();
     let currentConfig = config || {};
 
-    // 1. Scrub Query Parameters
+    // 1. Scrub Query Parameters from URL
     if (url.toLowerCase().includes('email')) {
       const urlObj = new URL(url, window.location.origin);
       const params = new URLSearchParams(urlObj.search);
       let changed = false;
-      const forbidden = ['email', 'user_email', 'mail', 'e-mail'];
+      const forbidden = ['email', 'user_email', 'mail', 'e-mail', 'reference-email', 'reference_email'];
       
       forbidden.forEach(key => {
         if (params.has(key)) {
@@ -66,7 +68,7 @@ window.fetch = async function(resource: string | Request | URL, config?: Request
         const scrubbed = deepScrub(parsed);
         currentConfig.body = JSON.stringify(scrubbed);
       } catch (e) {
-        // Not JSON, ignore
+        // Not JSON or malformed, leave as is
       }
     }
 
@@ -75,18 +77,18 @@ window.fetch = async function(resource: string | Request | URL, config?: Request
       const headers = new Headers(currentConfig.headers);
       headers.delete('X-User-Email');
       headers.delete('X-Email');
+      headers.delete('reference-email');
       currentConfig.headers = headers;
     }
 
-    // If resource was a Request object, we must rebuild it or fetch the new URL/Config
+    // Rebuild request if necessary
     if (resource instanceof Request) {
-      // Re-initialize a new Request from the original but with our clean URL and config
       return originalFetch(url, currentConfig);
     }
 
     return originalFetch(url, currentConfig);
   } catch (err) {
-    console.error('[Interceptor Bypass]', err);
+    console.error('[Interceptor Critical]', err);
     return originalFetch(resource, config);
   }
 };
