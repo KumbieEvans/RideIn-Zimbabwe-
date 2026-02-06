@@ -95,25 +95,34 @@ const trip: Trip = {
 Use discriminated union variants for status-specific logic:
 
 ```typescript
-import { StrictTrip, CompletedTrip, ActiveTrip } from './types';
+import { StrictTrip, CompletedTrip, ActiveTrip, PendingTrip } from './types';
 
 function processTrip(trip: StrictTrip) {
   switch (trip.status) {
     case TripStatus.COMPLETED:
       // TypeScript knows trip is CompletedTrip
-      console.log(trip.final_price); // ✅ Required field
-      console.log(trip.completedAt); // ✅ Required field
+      console.log(trip.final_price); // ✅ Required field (number, not optional)
+      console.log(trip.completedAt); // ✅ Required field (string, not optional)
+      console.log(trip.driverId); // ✅ Required field
       break;
       
     case TripStatus.ARRIVING:
     case TripStatus.IN_PROGRESS:
       // TypeScript knows trip is ActiveTrip
-      console.log(trip.driverId); // ✅ Required field
+      console.log(trip.driverId); // ✅ Required field (string, not optional)
       break;
       
     case TripStatus.PENDING:
-      // driverId and final_price are undefined
-      console.log(trip.driverId); // undefined
+      // TypeScript knows trip is PendingTrip
+      // driverId and final_price fields don't exist (properly omitted)
+      // trip.driverId would be a TypeScript error
+      console.log(trip.riderId); // ✅ All other trip fields available
+      break;
+      
+    case TripStatus.ACCEPTED:
+      // TypeScript knows acceptedBidId and driverId are required
+      console.log(trip.acceptedBidId); // ✅ Required field
+      console.log(trip.driverId); // ✅ Required field
       break;
   }
 }
@@ -206,13 +215,25 @@ ablyService.subscribeToRideLocation(tripId, (data: unknown) => {
   console.log(location.lat, location.lng, location.rotation);
 });
 
-// Ride events
+// Ride events - now with discriminated union
 ablyService.subscribeToRideEvents(tripId, (data: unknown) => {
   const event = data as RideEventPayload;
-  if (event.type === 'bid') {
-    // event.data is Bid
-  } else if (event.type === 'status_update') {
-    // event.data is { status: TripStatus }
+  
+  switch (event.type) {
+    case 'bid':
+      // TypeScript knows event.data is Bid
+      console.log(event.data.amount);
+      break;
+      
+    case 'status_update':
+      // TypeScript knows event.data is { status: TripStatus }
+      console.log(event.data.status);
+      break;
+      
+    case 'cancel':
+      // TypeScript knows event.data is { reason: string }
+      console.log(event.data.reason);
+      break;
   }
 });
 ```

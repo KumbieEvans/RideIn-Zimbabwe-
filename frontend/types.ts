@@ -186,10 +186,8 @@ export interface Trip {
 }
 
 // Discriminated union variants for new code
-export type PendingTrip = Trip & { 
+export type PendingTrip = Omit<Trip, 'driverId' | 'final_price'> & { 
   status: TripStatus.PENDING; 
-  driverId?: undefined; 
-  final_price?: undefined; 
 };
 
 export type BiddingTrip = Trip & { 
@@ -197,18 +195,18 @@ export type BiddingTrip = Trip & {
   bids: Bid[]; 
 };
 
-export type AcceptedTrip = Trip & { 
+export type AcceptedTrip = Omit<Trip, 'acceptedBidId' | 'driverId'> & { 
   status: TripStatus.ACCEPTED; 
   driverId: string; 
   acceptedBidId: string; 
 };
 
-export type ActiveTrip = Trip & { 
+export type ActiveTrip = Omit<Trip, 'driverId'> & { 
   status: TripStatus.ARRIVING | TripStatus.IN_PROGRESS; 
   driverId: string; 
 };
 
-export type CompletedTrip = Trip & { 
+export type CompletedTrip = Omit<Trip, 'driverId' | 'final_price' | 'completedAt'> & { 
   status: TripStatus.COMPLETED; 
   driverId: string; 
   final_price: number; 
@@ -247,10 +245,22 @@ export interface DriverLocationPayload {
   ts: number;
 }
 
-export interface RideEventPayload {
-  type: 'bid' | 'status_update' | 'cancel';
-  data: Bid | { status: TripStatus } | { reason: string };
+export interface BidEventPayload {
+  type: 'bid';
+  data: Bid;
 }
+
+export interface StatusUpdateEventPayload {
+  type: 'status_update';
+  data: { status: TripStatus };
+}
+
+export interface CancelEventPayload {
+  type: 'cancel';
+  data: { reason: string };
+}
+
+export type RideEventPayload = BidEventPayload | StatusUpdateEventPayload | CancelEventPayload;
 
 // ============================================================================
 // RUNTIME TYPE GUARDS
