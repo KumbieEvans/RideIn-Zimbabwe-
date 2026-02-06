@@ -1,9 +1,3 @@
-// Safety: Ensure process.env is shimmed before any other imports
-if (typeof window !== 'undefined') {
-  (window as any).process = (window as any).process || { env: {} };
-  (window as any).process.env = (window as any).process.env || {};
-}
-
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App';

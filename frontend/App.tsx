@@ -1,9 +1,3 @@
-// Safety: Shim process.env for browser environments immediately
-if (typeof window !== 'undefined') {
-  (window as any).process = (window as any).process || { env: {} };
-  (window as any).process.env = (window as any).process.env || {};
-}
-
 import React, { useState, useEffect, Suspense } from 'react';
 import { User } from './types';
 import { xanoService } from './services/xano';
