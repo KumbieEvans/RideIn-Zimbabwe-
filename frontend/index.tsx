@@ -2,6 +2,7 @@ import React from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import { ToastProvider } from './hooks/useToastContext';
 import './index.css';
 
 const rootElement = document.getElementById('root');
@@ -14,7 +15,9 @@ if (rootElement) {
     root.render(
       <React.StrictMode>
         <ErrorBoundary>
-          <App />
+          <ToastProvider>
+            <App />
+          </ToastProvider>
         </ErrorBoundary>
       </React.StrictMode>
     );

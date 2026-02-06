@@ -8,6 +8,7 @@ import { ActiveTripView } from './ActiveTripView';
 import { SideDrawer } from './SideDrawer';
 import { ScoutView } from './ScoutView';
 import { PASSENGER_CATEGORIES, FREIGHT_CATEGORIES } from '../constants';
+import { useToastContext } from '../hooks/useToastContext';
 
 const MapView = React.lazy(() => import('./MapView'));
 
@@ -35,15 +36,28 @@ export const RiderHomeView: React.FC<{ user: User; onLogout: () => void; onUserU
   const [suggestions, setSuggestions] = useState<GeoResult[]>([]);
   const [activeField, setActiveField] = useState<'pickup' | 'dropoff' | null>(null);
 
+  const toast = useToastContext();
+
   useEffect(() => {
     if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition((pos) => {
-        setMapCenter([pos.coords.longitude, pos.coords.latitude]);
-        setPickupCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude });
-        mapboxService.reverseGeocode(pos.coords.latitude, pos.coords.longitude).then(setPickup);
-      });
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          setMapCenter([pos.coords.longitude, pos.coords.latitude]);
+          setPickupCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+          mapboxService.reverseGeocode(pos.coords.latitude, pos.coords.longitude)
+            .then(setPickup)
+            .catch((err) => {
+              console.error('Failed to get location address:', err);
+              toast.warning('Unable to get your current address');
+            });
+        },
+        (err) => {
+          console.error('Geolocation error:', err);
+          toast.info('Location access denied. Please enter your pickup location manually.');
+        }
+      );
     }
-  }, []);
+  }, [toast]);
 
   useEffect(() => {
     const unsub = xanoService.subscribeToActiveTrip((trip) => {
@@ -60,24 +74,32 @@ export const RiderHomeView: React.FC<{ user: User; onLogout: () => void; onUserU
 
   useEffect(() => {
     if (pickupCoords && dropoffCoords) {
-      mapboxService.getRoute(pickupCoords, dropoffCoords).then(route => {
-        if (route) {
-          setRouteGeometry(route.geometry);
-          setRouteDistance(parseFloat(route.distance));
-          setRouteDuration(route.duration); // Already in minutes
-          setProposedFare(Math.max(2, parseFloat(route.distance) * 0.8));
-          setViewState('review');
-        }
-      });
+      mapboxService.getRoute(pickupCoords, dropoffCoords)
+        .then(route => {
+          if (route) {
+            setRouteGeometry(route.geometry);
+            setProposedFare(Math.max(2, parseFloat(route.distance) * 0.8));
+            setViewState('review');
+          }
+        })
+        .catch((err) => {
+          console.error('Failed to get route:', err);
+          toast.error('Unable to calculate route. Please try different locations.');
+        });
     }
-  }, [pickupCoords, dropoffCoords]);
+  }, [pickupCoords, dropoffCoords, toast]);
 
   const handleAddressSearch = async (query: string, field: 'pickup' | 'dropoff') => {
     if (field === 'pickup') setPickup(query); else setDropoff(query);
     setActiveField(field);
     if (query.length > 2) {
-      const results = await mapboxService.searchAddress(query);
-      setSuggestions(results);
+      try {
+        const results = await mapboxService.searchAddress(query);
+        setSuggestions(results);
+      } catch (err) {
+        console.error('Address search failed:', err);
+        // Silently fail for search suggestions
+      }
     }
   };
 
@@ -90,25 +112,58 @@ export const RiderHomeView: React.FC<{ user: User; onLogout: () => void; onUserU
   const handleMagicAssist = async () => {
     if (!aiPrompt.trim()) return;
     setIsAiParsing(true);
-    const result = await geminiService.parseDispatchPrompt(aiPrompt, pickupCoords || undefined);
-    if (result) {
-      if (result.pickup) { setPickup(result.pickup); const p = await mapboxService.searchAddress(result.pickup); if (p[0]) setPickupCoords({ lat: p[0].lat, lng: p[0].lng }); }
-      if (result.dropoff) { setDropoff(result.dropoff); const d = await mapboxService.searchAddress(result.dropoff); if (d[0]) setDropoffCoords({ lat: d[0].lat, lng: d[0].lng }); }
-      if (result.category) setSelectedCategory(result.category);
-      setAiPrompt('');
+    try {
+      const result = await geminiService.parseDispatchPrompt(aiPrompt, pickupCoords || undefined);
+      if (result) {
+        if (result.pickup) { 
+          setPickup(result.pickup); 
+          const p = await mapboxService.searchAddress(result.pickup); 
+          if (p[0]) setPickupCoords({ lat: p[0].lat, lng: p[0].lng }); 
+        }
+        if (result.dropoff) { 
+          setDropoff(result.dropoff); 
+          const d = await mapboxService.searchAddress(result.dropoff); 
+          if (d[0]) setDropoffCoords({ lat: d[0].lat, lng: d[0].lng }); 
+        }
+        if (result.category) setSelectedCategory(result.category);
+        setAiPrompt('');
+        toast.success('Trip details parsed successfully!');
+      } else {
+        toast.warning('Unable to parse your request. Please try again.');
+      }
+    } catch (err) {
+      console.error('AI parsing failed:', err);
+      toast.error('AI assistance unavailable. Please enter trip details manually.');
+    } finally {
+      setIsAiParsing(false);
     }
-    setIsAiParsing(false);
   };
 
   const handleRequestTrip = async () => {
-    if (!pickupCoords || !dropoffCoords) return;
-    const trip = await xanoService.requestTrip({
-      riderId: user.id, type: activeTab === 'ride' ? VehicleType.PASSENGER : VehicleType.FREIGHT, category: selectedCategory,
-      pickup: { address: pickup, lat: pickupCoords.lat, lng: pickupCoords.lng },
-      dropoff: { address: dropoff, lat: dropoffCoords.lat, lng: dropoffCoords.lng },
-      proposed_price: proposedFare, distance_km: routeDistance, duration: routeDuration,
-    });
-    setActiveTrip(trip); setViewState('bidding');
+    if (!pickupCoords || !dropoffCoords) {
+      toast.warning('Please select both pickup and dropoff locations');
+      return;
+    }
+    
+    try {
+      const trip = await xanoService.requestTrip({
+        riderId: user.id, 
+        type: activeTab === 'ride' ? VehicleType.PASSENGER : VehicleType.FREIGHT, 
+        category: selectedCategory,
+        pickup: { address: pickup, lat: pickupCoords.lat, lng: pickupCoords.lng },
+        dropoff: { address: dropoff, lat: dropoffCoords.lat, lng: dropoffCoords.lng },
+        proposed_price: proposedFare, 
+        distance_km: 0, 
+        duration: 0,
+      });
+      setActiveTrip(trip); 
+      setViewState('bidding');
+      toast.success('Trip request sent! Waiting for drivers...');
+    } catch (err) {
+      console.error('Failed to request trip:', err);
+      const message = err instanceof Error ? err.message : 'Failed to request trip';
+      toast.error(message);
+    }
   };
 
   if (viewState === 'active' && activeTrip) return <ActiveTripView trip={activeTrip} role="rider" onClose={() => setViewState('idle')} />;

@@ -6,7 +6,7 @@ import { SplashAnimation } from './components/SplashAnimation';
 import { PublicOnboardingView } from './components/PublicOnboardingView';
 import ToastContainer from './components/ToastContainer';
 import OfflineBanner from './components/OfflineBanner';
-import { useToast } from './hooks/useToast';
+import { ToastProvider, useToastContext } from './hooks/useToastContext';
 import { useNetworkStatus } from './hooks/useNetworkStatus';
 
 /**
@@ -53,7 +53,7 @@ const App: React.FC = () => {
   const [hasSeenIntro, setHasSeenIntro] = useState<boolean | null>(null);
   
   const { isOnline } = useNetworkStatus();
-  const toast = useToast();
+  const toast = useToastContext();
 
   useEffect(() => {
     // Guaranteed Splash visibility for initial brand engagement
