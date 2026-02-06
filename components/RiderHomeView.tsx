@@ -1,14 +1,12 @@
-
 import React, { useState, useEffect, Suspense, useMemo, useRef } from 'react';
 import { User, Trip, TripStatus, VehicleType, Bid, PassengerCategory, FreightCategory } from '../types';
 import { Button, Card, Badge, Input } from './Shared';
 import { xanoService } from '../services/xano';
 import { ablyService } from '../services/ably';
-import { mapboxService } from '../services/mapbox';
+import { mapboxService, GeoResult } from '../services/mapbox';
 import { geminiService } from '../services/gemini';
 import { ActiveTripView } from './ActiveTripView';
 import { SideDrawer } from './SideDrawer';
-import { OnboardingView } from './OnboardingView';
 import { ScoutView } from './ScoutView';
 import { PASSENGER_CATEGORIES, FREIGHT_CATEGORIES } from '../constants';
 
@@ -23,7 +21,6 @@ export const RiderHomeView: React.FC<{ user: User; onLogout: () => void; onUserU
   const [activeView, setActiveView] = useState('map');
   const [activeTab, setActiveTab] = useState<'ride' | 'freight'>('ride');
   const [viewState, setViewState] = useState<'idle' | 'review' | 'bidding' | 'active'>('idle');
-  const [showOnboarding, setShowOnboarding] = useState(false);
   const [showScout, setShowScout] = useState(false);
   
   const [loading, setLoading] = useState(false);
@@ -46,6 +43,12 @@ export const RiderHomeView: React.FC<{ user: User; onLogout: () => void; onUserU
   const [isAiParsing, setIsAiParsing] = useState(false);
   const [fareExplanation, setFareExplanation] = useState<string | null>(null);
 
+  // Address Autocomplete State
+  const [suggestions, setSuggestions] = useState<GeoResult[]>([]);
+  const [activeField, setActiveField] = useState<'pickup' | 'dropoff' | null>(null);
+  const searchTimeout = useRef<any>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+
   // Tactical Initial GPS Lock
   useEffect(() => {
     if (navigator.geolocation) {
@@ -60,6 +63,15 @@ export const RiderHomeView: React.FC<{ user: User; onLogout: () => void; onUserU
         { enableHighAccuracy: true }
       );
     }
+
+    // Click outside listener to close suggestions
+    const handleClickOutside = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setActiveField(null);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
   // Sync with Active Trip
@@ -116,6 +128,37 @@ export const RiderHomeView: React.FC<{ user: User; onLogout: () => void; onUserU
       return unsub;
     }
   }, [activeTrip]);
+
+  const handleAddressSearch = (query: string, field: 'pickup' | 'dropoff') => {
+    if (field === 'pickup') setPickup(query);
+    else setDropoff(query);
+    setActiveField(field);
+
+    if (searchTimeout.current) clearTimeout(searchTimeout.current);
+    
+    if (query.length < 3) {
+      setSuggestions([]);
+      return;
+    }
+
+    searchTimeout.current = setTimeout(async () => {
+      const results = await mapboxService.searchAddress(query);
+      setSuggestions(results);
+    }, 400);
+  };
+
+  const handleSelectSuggestion = (res: GeoResult) => {
+    if (activeField === 'pickup') {
+      setPickup(res.address);
+      setPickupCoords({ lat: res.lat, lng: res.lng });
+      setMapCenter([res.lng, res.lat]);
+    } else {
+      setDropoff(res.address);
+      setDropoffCoords({ lat: res.lat, lng: res.lng });
+    }
+    setSuggestions([]);
+    setActiveField(null);
+  };
 
   const handleMagicDispatch = async () => {
     if (!aiPrompt.trim()) return;
@@ -258,8 +301,8 @@ export const RiderHomeView: React.FC<{ user: User; onLogout: () => void; onUserU
 
         {/* Tactical UI Overlays */}
         {viewState === 'idle' && (
-          <div className="absolute bottom-10 inset-x-6 z-30 space-y-4 animate-slide-up">
-            <Card variant="glass" className="!p-4 bg-black/60 backdrop-blur-2xl border-white/5 shadow-2xl rounded-[2.5rem]">
+          <div className="absolute bottom-10 inset-x-6 z-30 space-y-4 animate-slide-up" ref={containerRef}>
+            <Card variant="glass" className="!p-4 bg-black/80 backdrop-blur-2xl border-white/10 shadow-2xl rounded-[2.5rem] relative">
               <div className="relative mb-4">
                 <Input 
                   variant="glass" 
@@ -277,14 +320,51 @@ export const RiderHomeView: React.FC<{ user: User; onLogout: () => void; onUserU
                 )}
               </div>
               
-              <div className="space-y-2">
-                <div className="flex items-center gap-4 p-4 rounded-2xl bg-white/5 border border-white/5 hover:bg-white/10 transition-colors" onClick={() => {/* Open search */}}>
-                   <div className="w-2 h-2 rounded-full bg-blue-500 shadow-[0_0_8px_#3B82F6]"></div>
-                   <p className="text-xs font-bold text-white/40 truncate">{pickup || 'Tactical Pickup Point'}</p>
+              <div className="space-y-3 relative">
+                {/* Pickup Field */}
+                <div className="relative">
+                  <Input 
+                    variant="glass" 
+                    placeholder="Tactical Pickup Point" 
+                    icon="location-crosshairs"
+                    value={pickup}
+                    onChange={(e) => handleAddressSearch(e.target.value, 'pickup')}
+                    onFocus={() => setActiveField('pickup')}
+                    className="!bg-white/5 border-white/5 focus:!bg-white/10"
+                  />
+                  {activeField === 'pickup' && suggestions.length > 0 && (
+                    <div className="absolute bottom-full left-0 right-0 mb-2 bg-black/90 backdrop-blur-xl rounded-2xl border border-white/10 overflow-hidden z-[60] shadow-2xl">
+                      {suggestions.map((s, i) => (
+                        <button key={i} onClick={() => handleSelectSuggestion(s)} className="w-full px-5 py-4 text-left hover:bg-white/10 border-b border-white/5 last:border-0 flex items-center gap-3">
+                          <i className="fa-solid fa-location-dot text-brand-orange text-xs"></i>
+                          <span className="text-[11px] font-bold text-white/80 truncate">{s.address}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
-                <div className="flex items-center gap-4 p-4 rounded-2xl bg-white/5 border border-white/5 hover:bg-white/10 transition-colors">
-                   <div className="w-2 h-2 rounded-full bg-brand-orange shadow-[0_0_8px_#FF5F00]"></div>
-                   <p className="text-xs font-bold text-white/40 truncate">{dropoff || 'Set Mission Objective'}</p>
+
+                {/* Destination Field */}
+                <div className="relative">
+                  <Input 
+                    variant="glass" 
+                    placeholder="Mission Destination" 
+                    icon="flag-checkered"
+                    value={dropoff}
+                    onChange={(e) => handleAddressSearch(e.target.value, 'dropoff')}
+                    onFocus={() => setActiveField('dropoff')}
+                    className="!bg-white/5 border-white/5 focus:!bg-white/10"
+                  />
+                  {activeField === 'dropoff' && suggestions.length > 0 && (
+                    <div className="absolute bottom-full left-0 right-0 mb-2 bg-black/90 backdrop-blur-xl rounded-2xl border border-white/10 overflow-hidden z-[60] shadow-2xl">
+                      {suggestions.map((s, i) => (
+                        <button key={i} onClick={() => handleSelectSuggestion(s)} className="w-full px-5 py-4 text-left hover:bg-white/10 border-b border-white/5 last:border-0 flex items-center gap-3">
+                          <i className="fa-solid fa-location-dot text-brand-orange text-xs"></i>
+                          <span className="text-[11px] font-bold text-white/80 truncate">{s.address}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
             </Card>
@@ -292,91 +372,97 @@ export const RiderHomeView: React.FC<{ user: User; onLogout: () => void; onUserU
         )}
 
         {viewState === 'review' && (
-          <div className="absolute bottom-0 inset-x-0 z-40 bg-[#001D3D] rounded-t-[3rem] p-8 shadow-2xl animate-slide-up border-t border-white/5">
-            <div className="w-14 h-1.5 bg-white/5 rounded-full mx-auto mb-8"></div>
-            
-            <div className="flex justify-between items-end mb-8">
-               <div>
-                  <h3 className="text-[10px] font-black text-brand-orange uppercase tracking-[0.4em] mb-1">Mission Quote</h3>
+          <div className="absolute bottom-10 inset-x-6 z-30 animate-slide-up">
+            <Card variant="glass" className="bg-black/90 backdrop-blur-3xl border-white/10 rounded-[3rem] p-8 shadow-[0_40px_80px_rgba(0,0,0,0.6)]">
+              <div className="flex justify-between items-start mb-8">
+                <div>
+                  <p className="text-[10px] font-black text-brand-orange uppercase tracking-[0.4em] mb-1">Deployment Payload</p>
+                  <h3 className="text-3xl font-black text-white italic tracking-tighter">Strategic {activeTab === 'ride' ? 'Ride' : 'Freight'}</h3>
+                </div>
+                <div className="text-right">
                   <div className="text-4xl font-black text-white tracking-tighter">${proposedFare.toFixed(2)}</div>
-               </div>
-               <button onClick={handleExplainFare} className="w-12 h-12 bg-white/5 rounded-2xl flex items-center justify-center text-white/50 hover:text-white transition-colors haptic-press">
-                  <i className="fa-solid fa-shield-halved"></i>
-               </button>
-            </div>
-
-            {fareExplanation && (
-              <div className="mb-8 p-4 bg-brand-orange/5 border border-brand-orange/10 rounded-2xl animate-fade-in">
-                 <p className="text-[10px] text-brand-orange font-bold leading-relaxed italic">"{fareExplanation}"</p>
+                  <button onClick={handleExplainFare} className="text-[9px] font-black text-blue-400 uppercase tracking-widest mt-1 hover:text-white transition-colors">Why this price?</button>
+                </div>
               </div>
-            )}
 
-            <div className="grid grid-cols-3 gap-3 mb-8">
-              {(activeTab === 'ride' ? PASSENGER_CATEGORIES : FREIGHT_CATEGORIES).map(cat => (
-                <button 
-                  key={cat.id} 
-                  onClick={() => setSelectedCategory(cat.name)}
-                  className={`p-4 rounded-2xl border-2 transition-all flex flex-col items-center gap-2 haptic-press ${selectedCategory === cat.name ? 'border-brand-orange bg-brand-orange/10 shadow-[0_0_15px_rgba(255,95,0,0.1)]' : 'border-white/5 bg-white/5 opacity-40'}`}
-                >
-                  <i className={`fa-solid fa-${cat.icon} text-lg ${selectedCategory === cat.name ? 'text-brand-orange' : 'text-white'}`}></i>
-                  <span className="text-[8px] font-black uppercase tracking-widest">{cat.name.split(' ')[0]}</span>
-                </button>
-              ))}
-            </div>
+              {fareExplanation && (
+                <div className="mb-8 p-4 bg-blue-500/10 border border-blue-500/20 rounded-2xl text-[11px] font-bold text-blue-200 leading-relaxed italic animate-fade-in">
+                  "{fareExplanation}"
+                </div>
+              )}
 
-            <div className="flex gap-4">
-               <Button variant="ghost" className="flex-1 py-6 !rounded-2xl text-white/20" onClick={() => {setPickupCoords(null); setDropoffCoords(null); setViewState('idle');}}>Abort</Button>
-               <Button variant="secondary" className="flex-[3] py-6 !rounded-3xl text-sm font-black uppercase tracking-[0.3em] shadow-[0_20px_40px_rgba(255,95,0,0.2)]" loading={loading} onClick={handleRequestTrip}>Initiate Request</Button>
-            </div>
+              <div className="grid grid-cols-3 gap-3 mb-10">
+                {(activeTab === 'ride' ? PASSENGER_CATEGORIES : FREIGHT_CATEGORIES).map(cat => (
+                  <button 
+                    key={cat.id} 
+                    onClick={() => setSelectedCategory(cat.name)}
+                    className={`flex flex-col items-center gap-3 p-4 rounded-3xl border transition-all haptic-press ${selectedCategory === cat.name ? 'bg-brand-orange border-brand-orange shadow-[0_10px_20px_rgba(255,95,0,0.3)]' : 'bg-white/5 border-white/5 text-white/30'}`}
+                  >
+                    <i className={`fa-solid fa-${cat.icon} text-lg`}></i>
+                    <span className="text-[8px] font-black uppercase tracking-widest">{cat.name}</span>
+                  </button>
+                ))}
+              </div>
+
+              <div className="flex gap-4">
+                <Button variant="ghost" className="flex-1 py-6 text-[10px] font-black uppercase tracking-widest text-white/20" onClick={() => { setViewState('idle'); setDropoffCoords(null); setRouteGeometry(null); }}>Abort</Button>
+                <Button variant="secondary" className="flex-[2] py-6 text-[12px] font-black uppercase tracking-[0.4em] shadow-2xl" onClick={handleRequestTrip} loading={loading}>Deploy Node</Button>
+              </div>
+            </Card>
           </div>
         )}
 
         {viewState === 'bidding' && (
-          <div className="absolute inset-0 z-50 bg-[#000814]/90 backdrop-blur-xl flex flex-col p-8 safe-top">
-             <div className="flex-1 flex flex-col items-center justify-center text-center">
-                <div className="relative mb-12">
-                   <div className="absolute -inset-10 bg-brand-orange/10 blur-3xl rounded-full animate-pulse-slow"></div>
-                   <div className="w-32 h-32 border-4 border-brand-orange/20 rounded-[3rem] flex items-center justify-center relative z-10">
-                      <i className="fa-solid fa-satellite-dish text-5xl text-brand-orange animate-pulse"></i>
-                   </div>
-                </div>
-                
-                <h2 className="text-3xl font-black text-white italic tracking-tighter mb-4 uppercase">Broadcasting Grid...</h2>
-                <p className="text-blue-100/30 text-[10px] font-bold uppercase tracking-[0.4em] mb-12 max-w-[200px] leading-relaxed">Securing tactical bids from nearby drivers in {user.city}</p>
+          <div className="absolute bottom-10 inset-x-6 z-30 animate-slide-up">
+            <Card variant="glass" className="bg-black/95 backdrop-blur-3xl border-brand-orange/20 rounded-[3rem] p-10 text-center shadow-2xl">
+              <div className="relative w-24 h-24 mx-auto mb-8">
+                 <div className="absolute inset-0 border-4 border-brand-orange/20 rounded-full"></div>
+                 <div className="absolute inset-0 border-4 border-brand-orange border-t-transparent rounded-full animate-spin"></div>
+                 <div className="absolute inset-0 flex items-center justify-center">
+                    <i className="fa-solid fa-satellite-dish text-2xl text-brand-orange animate-pulse"></i>
+                 </div>
+              </div>
+              
+              <h3 className="text-2xl font-black text-white italic tracking-tighter uppercase mb-4">Scanning Market Grid</h3>
+              <p className="text-blue-200/40 text-[11px] font-bold uppercase tracking-[0.3em] mb-12">Negotiating with elite partners in your sector...</p>
 
-                <div className="w-full space-y-4 max-w-sm">
-                   {bids.length === 0 ? (
-                      <div className="py-20 border-2 border-dashed border-white/5 rounded-[2.5rem] flex flex-col items-center text-white/10 italic">
-                         <span className="text-xs">Scanning sector...</span>
-                      </div>
-                   ) : (
-                      bids.map(bid => (
-                        <Card key={bid.id} className="!bg-[#001D3D] border-0 !p-5 rounded-[2rem] flex items-center justify-between animate-scale-in group">
-                           <div className="flex items-center gap-4">
-                              <div className="w-12 h-12 rounded-2xl bg-white/5 overflow-hidden">
-                                 <img src={bid.driverAvatar || `https://ui-avatars.com/api/?name=${bid.driverName}&background=random`} alt={bid.driverName} />
-                              </div>
-                              <div className="text-left">
-                                 <h4 className="font-black text-white text-sm tracking-tight">{bid.driverName}</h4>
-                                 <div className="flex items-center gap-2 mt-0.5">
-                                    <Badge color="orange" className="!text-[7px]">{bid.driverRating} ★</Badge>
-                                    <span className="text-[8px] text-white/30 font-bold uppercase tracking-widest">{bid.vehicleInfo}</span>
-                                 </div>
-                              </div>
-                           </div>
-                           <div className="text-right flex flex-col items-end gap-2">
-                              <div className="text-xl font-black text-white tracking-tighter">${bid.amount}</div>
-                              <button onClick={() => handleAcceptBid(bid)} className="px-4 py-2 bg-brand-orange text-white text-[9px] font-black uppercase tracking-widest rounded-xl shadow-lg active:scale-95 transition-all">Select</button>
-                           </div>
-                        </Card>
-                      ))
-                   )}
-                </div>
-             </div>
-             
-             <button onClick={() => xanoService.cancelTrip(activeTrip!.id).then(() => setViewState('idle'))} className="mt-auto py-8 text-[10px] font-black text-white/20 uppercase tracking-[0.5em] hover:text-red-500 transition-colors">
-                Cancel Deployment
-             </button>
+              <div className="space-y-4 max-h-[30vh] overflow-y-auto no-scrollbar pb-6">
+                {bids.length === 0 ? (
+                  <div className="py-10 text-[9px] font-black text-white/10 uppercase tracking-[0.5em] animate-pulse">Awaiting incoming signals...</div>
+                ) : (
+                  bids.map(bid => (
+                    <Card key={bid.id} className="!p-5 bg-white/5 border-white/5 rounded-3xl flex items-center justify-between animate-scale-in">
+                       <div className="flex items-center gap-4">
+                          <div className="w-12 h-12 rounded-2xl bg-slate-800 overflow-hidden border border-white/10">
+                             <img src={`https://ui-avatars.com/api/?name=${bid.driverName}&background=random`} alt={bid.driverName} />
+                          </div>
+                          <div className="text-left">
+                             <div className="text-sm font-black text-white">{bid.driverName}</div>
+                             <div className="flex items-center gap-2 mt-1">
+                                <i className="fa-solid fa-star text-[10px] text-brand-orange"></i>
+                                <span className="text-[10px] font-bold text-white/40">{bid.driverRating}</span>
+                             </div>
+                          </div>
+                       </div>
+                       <div className="text-right">
+                          <div className="text-xl font-black text-white">${bid.amount}</div>
+                          <button onClick={() => handleAcceptBid(bid)} className="mt-2 bg-brand-orange text-white px-5 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest shadow-lg haptic-press">Accept</button>
+                       </div>
+                    </Card>
+                  ))
+                )}
+              </div>
+
+              <button 
+                onClick={async () => {
+                  if (activeTrip) await xanoService.cancelTrip(activeTrip.id);
+                  setViewState('idle');
+                }} 
+                className="mt-8 text-[9px] font-black text-red-500/50 uppercase tracking-[0.4em] hover:text-red-500 transition-colors"
+              >
+                Terminate Request
+              </button>
+            </Card>
           </div>
         )}
       </div>
