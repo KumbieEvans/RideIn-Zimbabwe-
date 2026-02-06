@@ -14,6 +14,7 @@ export const DriverHomeView: React.FC<{ user: User; onLogout: () => void; onUser
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [location, setLocation] = useState<{lat: number, lng: number}>({ lat: -17.8252, lng: 31.0335 });
   const locationRef = useRef<{lat: number, lng: number}>({ lat: -17.8252, lng: 31.0335 });
+  const [bidPrices, setBidPrices] = useState<Record<string, number>>({});
 
   useEffect(() => {
     if (navigator.geolocation) {
@@ -34,6 +35,8 @@ export const DriverHomeView: React.FC<{ user: User; onLogout: () => void; onUser
     if (isOnline) {
       ablyService.subscribeToRequests(user.city || 'Harare', locationRef.current.lat, locationRef.current.lng, (trip) => {
         setAvailableTrips(prev => [trip, ...prev.filter(t => t.id !== trip.id)]);
+        // Initialize bid price with proposed price
+        setBidPrices(prevPrices => ({ ...prevPrices, [trip.id]: trip.proposed_price }));
       }).then(u => unsub = u);
     }
     return () => { if (unsub) unsub(); };
@@ -76,15 +79,38 @@ export const DriverHomeView: React.FC<{ user: User; onLogout: () => void; onUser
                 <Card key={trip.id} className="bg-white border-zinc-100 shadow-md">
                    <div className="flex justify-between items-start mb-6">
                       <Badge color="blue">{trip.category}</Badge>
-                      <div className="text-right"><div className="text-2xl font-black text-black tracking-tighter">${trip.proposed_price}</div></div>
+                      <div className="text-right">
+                        <div className="text-xs text-zinc-400 font-bold uppercase tracking-widest mb-1">Your Offer</div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-lg font-black text-black">$</span>
+                          <input 
+                            type="number" 
+                            step="0.01" 
+                            min="0" 
+                            value={bidPrices[trip.id] || trip.proposed_price} 
+                            onChange={(e) => setBidPrices(prev => ({ ...prev, [trip.id]: parseFloat(e.target.value) || 0 }))}
+                            className="w-20 text-2xl font-black text-black tracking-tighter bg-transparent border-b-2 border-zinc-200 focus:border-brand-blue outline-none text-right"
+                          />
+                        </div>
+                      </div>
                    </div>
                    <div className="space-y-3 mb-6">
                       <div className="flex gap-3 text-xs font-bold text-zinc-600 truncate"><div className="w-1.5 h-1.5 bg-zinc-200 rounded-full mt-1.5"></div>{trip.pickup.address}</div>
                       <div className="flex gap-3 text-xs font-bold text-zinc-600 truncate"><div className="w-1.5 h-1.5 bg-brand-orange rounded-full mt-1.5"></div>{trip.dropoff.address}</div>
+                      <div className="flex gap-3 text-[10px] text-zinc-400 font-bold">
+                        <span>Suggested: ${trip.proposed_price.toFixed(2)}</span>
+                      </div>
                    </div>
                    <div className="flex gap-3">
-                      <Button variant="outline" className="flex-1 py-3 text-[10px]" onClick={() => setAvailableTrips(p => p.filter(t => t.id !== trip.id))}>Skip</Button>
-                      <Button variant="dark" className="flex-2 py-3 text-[10px]" onClick={() => xanoService.submitBid(trip.id, trip.proposed_price, user)}>Accept</Button>
+                      <Button variant="outline" className="flex-1 py-3 text-[10px]" onClick={() => {
+                        setAvailableTrips(p => p.filter(t => t.id !== trip.id));
+                        setBidPrices(prev => {
+                          const newPrices = { ...prev };
+                          delete newPrices[trip.id];
+                          return newPrices;
+                        });
+                      }}>Skip</Button>
+                      <Button variant="dark" className="flex-2 py-3 text-[10px]" onClick={() => xanoService.submitBid(trip.id, bidPrices[trip.id] || trip.proposed_price, user)}>Accept</Button>
                    </div>
                 </Card>
               ))

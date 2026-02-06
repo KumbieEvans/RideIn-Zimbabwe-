@@ -16,7 +16,7 @@ interface ActiveTripViewProps {
 }
 
 export const ActiveTripView: React.FC<ActiveTripViewProps> = ({ trip, role, onClose }) => {
-  const [eta] = useState('4 mins');
+  const [eta, setEta] = useState(trip.duration ? `${trip.duration} min` : 'Calculating...');
   const [statusMessage, setStatusMessage] = useState('');
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -35,10 +35,32 @@ export const ActiveTripView: React.FC<ActiveTripViewProps> = ({ trip, role, onCl
          { lat: trip.pickup.lat, lng: trip.pickup.lng },
          { lat: trip.dropoff.lat, lng: trip.dropoff.lng }
        ).then(route => {
-          if (route) setRouteGeometry(route.geometry);
+          if (route) {
+            setRouteGeometry(route.geometry);
+            const durationMins = Math.ceil(parseFloat(route.duration) / 60);
+            setEta(`${durationMins} min`);
+          }
        });
     }
   }, [trip, routeGeometry]);
+
+  // Update ETA when driver location changes
+  useEffect(() => {
+    if (role === 'rider' && driverLocation && trip.pickup) {
+      const target = trip.status === 'ARRIVING' ? trip.pickup : trip.dropoff;
+      if (target) {
+        mapboxService.getRoute(
+          { lat: driverLocation.lat, lng: driverLocation.lng },
+          { lat: target.lat, lng: target.lng }
+        ).then(route => {
+          if (route) {
+            const durationMins = Math.ceil(parseFloat(route.duration) / 60);
+            setEta(`${durationMins} min`);
+          }
+        });
+      }
+    }
+  }, [driverLocation, trip.status, trip.pickup, trip.dropoff, role]);
 
   useEffect(() => {
     switch (trip.status) {
