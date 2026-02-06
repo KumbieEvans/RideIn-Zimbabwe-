@@ -1,4 +1,3 @@
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -19,18 +18,23 @@
 
   html {
     scroll-behavior: smooth;
-    background-color: #001D3D;
+    background-color: #000814;
   }
 
   body {
     overscroll-behavior-y: none;
-    font-family: 'Montserrat', sans-serif;
+    font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
     user-select: none;
-    background-color: #001D3D;
+    background-color: #000814;
     color: #FFFFFF;
     padding: var(--sat) var(--sar) var(--sab) var(--sal);
     -webkit-overflow-scrolling: touch;
     overflow-x: hidden;
+  }
+
+  /* Force disable italics globally as per production lock requirements */
+  i, em, .italic, h1, h2, h3, h4, span, div, p {
+    font-style: normal !important;
   }
 }
 
@@ -94,9 +98,9 @@
   }
 
   .glass-morphism {
-    background: rgba(255, 255, 255, 0.8);
+    background: rgba(0, 8, 20, 0.8);
     backdrop-filter: blur(20px) saturate(180%);
     -webkit-backdrop-filter: blur(20px) saturate(180%);
-    border: 1px solid rgba(255, 255, 255, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.05);
   }
 }

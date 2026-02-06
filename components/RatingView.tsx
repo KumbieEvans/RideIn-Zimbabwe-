@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Trip, UserRole } from '../types';
 import { Button, Card, Badge } from './Shared';
@@ -45,8 +44,8 @@ export const RatingView: React.FC<RatingViewProps> = ({ trip, role, onSubmit }) 
           <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
           
           <div className="relative z-10 flex flex-col items-center text-center">
-             <h1 className="text-3xl font-black italic tracking-tighter mb-4">RideIn</h1>
-             <h2 className="text-xl font-bold tracking-tight mb-2 opacity-80">Trip Summary</h2>
+             <h1 className="text-3xl font-black tracking-tighter mb-4 uppercase">GRID ALPHA</h1>
+             <h2 className="text-xl font-bold tracking-tight mb-2 opacity-80 uppercase">Trip Summary</h2>
              <div className="mt-4 flex items-baseline gap-1">
                 <span className="text-2xl font-bold text-blue-300">$</span>
                 <span className="text-5xl font-bold tracking-tighter">{trip.final_price?.toFixed(2)}</span>
@@ -61,7 +60,7 @@ export const RatingView: React.FC<RatingViewProps> = ({ trip, role, onSubmit }) 
                 <img src={partnerAvatar} alt={partnerName} className="w-full h-full object-cover" />
              </div>
              
-             <h3 className="text-xl font-bold text-slate-900 mb-1">Rate {partnerName}</h3>
+             <h3 className="text-xl font-bold text-slate-900 mb-1 uppercase">Rate {partnerName}</h3>
              <p className="text-[10px] text-gray-400 font-bold uppercase tracking-[0.2em] mb-8">{role === 'rider' ? trip.category : 'Passenger Mode'}</p>
 
              <div className="flex justify-center gap-3 mb-10">
@@ -102,7 +101,7 @@ export const RatingView: React.FC<RatingViewProps> = ({ trip, role, onSubmit }) 
                       <i className="fa-solid fa-heart"></i>
                    </div>
                    <div className="text-left">
-                      <div className={`font-bold text-sm ${isFavorite ? 'text-red-600' : 'text-slate-900'}`}>Add to Favourites</div>
+                      <div className={`font-bold text-sm uppercase ${isFavorite ? 'text-red-600' : 'text-slate-900'}`}>Add to Favourites</div>
                       <div className="text-[9px] text-gray-400 font-bold uppercase tracking-widest">Mutual Trust & Priority</div>
                    </div>
                 </div>
@@ -114,11 +113,11 @@ export const RatingView: React.FC<RatingViewProps> = ({ trip, role, onSubmit }) 
 
           <Button 
             variant="primary" 
-            className="w-full py-5 text-lg shadow-2xl rounded-3xl"
+            className="w-full py-5 text-lg shadow-2xl rounded-3xl uppercase tracking-widest"
             disabled={rating === 0 || submitting}
             onClick={handleSubmit}
           >
-            {submitting ? <i className="fa-solid fa-circle-notch fa-spin"></i> : 'Submit My Review'}
+            {submitting ? <i className="fa-solid fa-circle-notch fa-spin"></i> : 'Submit Review'}
           </Button>
           <button onClick={() => onSubmit(0, [], '', false)} className="w-full py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-4">Skip for now</button>
        </div>

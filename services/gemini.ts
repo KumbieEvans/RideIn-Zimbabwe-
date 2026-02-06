@@ -1,100 +1,85 @@
-
-import { GoogleGenAI, Type, Modality } from "@google/genai";
+import { GoogleGenAI, Type } from "@google/genai";
 
 /**
- * GEMINI SERVICE - Tactical Zimbabwe Edition
- * Optimized for local economy with Search and Maps Grounding.
+ * GEMINI SERVICE - Production Grid Edition
+ * Strict logic lock for Zimbabwean transport and logistics operations.
  */
 export class GeminiService {
   private ai() {
     return new GoogleGenAI({ apiKey: process.env.API_KEY });
   }
 
-  /**
-   * getMarketIntel: Fetches real-time traffic and demand insights for drivers.
-   */
+  private readonly PRODUCTION_PROMPT = "You are the Production Grid Controller for a professional transport network in Zimbabwe. Your purpose is strictly limited to logistics, fare estimation, market intelligence, and navigation support. Do not engage in creative writing, humor, personal opinions, or casual conversation. Maintain a professional, high-authority tone. Only provide information relevant to travel and logistics within Zimbabwe.";
+
   async getMarketIntel(city: string): Promise<string> {
     const ai = this.ai();
     try {
       const response = await ai.models.generateContent({
         model: "gemini-3-flash-preview",
-        contents: `Provide a 1-sentence tactical transport update for ${city}, Zimbabwe. Focus on current traffic hotspots, events, or weather affecting demand.`,
+        contents: `STATUS_UPDATE_REQUEST: Sector ${city}, Zimbabwe. Analyze traffic patterns and operational demand.`,
         config: {
           tools: [{ googleSearch: {} }],
-          systemInstruction: "You are the Fleet Intelligence Node. Provide one brief, professional, high-impact tactical tip for drivers. Use present tense."
+          systemInstruction: `${this.PRODUCTION_PROMPT} Provide a single, high-impact tactical update. Use present tense. No conversational filler.`
         }
       });
-      return response.text || "Market conditions optimal. Maintain grid presence.";
+      return response.text?.trim() || "Grid conditions stable. Sector clear.";
     } catch (error) {
-      return "Scan complete. Grid stable in the current sector.";
+      return "Grid link established. Awaiting market signal.";
     }
   }
 
-  /**
-   * parseDispatchPrompt: Uses Gemini 3 Flash for lightning-fast structural extraction.
-   */
   async parseDispatchPrompt(prompt: string, location?: { lat: number, lng: number }): Promise<any> {
     const ai = this.ai();
     try {
       const response = await ai.models.generateContent({
         model: "gemini-3-flash-preview",
-        contents: `USER_REQUEST: "${prompt}"\nGRID_COORDS: ${location?.lat || -17.82}, ${location?.lng || 31.03}`,
+        contents: `MISSION_REQUEST_NATURAL_LANGUAGE: "${prompt}"\nUSER_COORDINATES: ${location?.lat || -17.82}, ${location?.lng || 31.03}`,
         config: {
           responseMimeType: "application/json",
           responseSchema: {
             type: Type.OBJECT,
             properties: {
-              pickup: { type: Type.STRING, description: "Landmark or address for pickup" },
-              dropoff: { type: Type.STRING, description: "Landmark or address for destination" },
-              category: { type: Type.STRING, enum: ["Standard", "Premium", "Luxury"], description: "Vehicle class" },
-              type: { type: Type.STRING, enum: ["ride", "freight"], description: "Mission type" }
+              pickup: { type: Type.STRING, description: "Name of the pickup point" },
+              dropoff: { type: Type.STRING, description: "Name of the destination" },
+              category: { type: Type.STRING, enum: ["Standard", "Premium", "Luxury"], description: "Vehicle category" },
+              type: { type: Type.STRING, enum: ["ride", "freight"], description: "Type of mission" }
             },
             required: ["pickup", "dropoff", "category", "type"]
           },
-          systemInstruction: `You are the RideIn Zimbabwe Tactical Dispatcher. 
-          Extract transport parameters from natural language. 
-          Identify Zimbabwean landmarks (e.g., Sam Levy's, Joina City, Copa Cabana). 
-          Default to 'Standard' category unless luxury/premium is implied. 
-          Return ONLY valid JSON.`
+          systemInstruction: `${this.PRODUCTION_PROMPT} Extract mission parameters from natural language inputs. Identify Zimbabwean locations and landmarks with precision. Return ONLY JSON data.`
         }
       });
 
       return JSON.parse(response.text || "{}");
     } catch (error) {
-      console.error("[Gemini] Tactical Parse Failed:", error);
+      console.error("[AI Dispatch] Parse failure", error);
       return null;
     }
   }
 
-  /**
-   * explainFare: Justifies pricing using Google Search Grounding to check live fuel/traffic.
-   */
   async explainFare(details: { pickup: string, dropoff: string, price: string }): Promise<string> {
     const ai = this.ai();
     try {
       const response = await ai.models.generateContent({
         model: "gemini-3-flash-preview",
-        contents: `Explain a $${details.price} fare from ${details.pickup} to ${details.dropoff} in Zimbabwe.`,
+        contents: `EXPLAIN_FARE: $${details.price} | ORIGIN: ${details.pickup} | TARGET: ${details.dropoff}. Location: Zimbabwe.`,
         config: {
           tools: [{ googleSearch: {} }],
-          systemInstruction: "You are the Fare Guard. Use Google Search to cross-reference current Zim fuel prices and traffic. Be brief, authoritative, and transparent."
+          systemInstruction: `${this.PRODUCTION_PROMPT} You are the Fare Guard. Justify the calculated price using current Zimbabwean market conditions, fuel costs, and route complexity. Be authoritative and concise.`
         }
       });
-      return response.text || "Estimated fare based on local market distance.";
+      return response.text?.trim() || "Calculated fare aligns with current sector logistics.";
     } catch (error) {
-      return "Current market average for this tactical distance.";
+      return "Fare parameters calibrated to current regional standard.";
     }
   }
 
-  /**
-   * scout: Hyper-local landmark discovery using Gemini 2.5 Flash Maps Grounding.
-   */
   async scout(query: string, location?: { lat: number, lng: number }): Promise<{ text: string, grounding: any[] }> {
     const ai = this.ai();
     try {
       const response = await ai.models.generateContent({
         model: "gemini-2.5-flash",
-        contents: query,
+        contents: `SCOUT_QUERY: "${query}"`,
         config: {
           tools: [{ googleMaps: {} }],
           toolConfig: {
@@ -105,16 +90,16 @@ export class GeminiService {
               }
             }
           },
-          systemInstruction: "You are RideIn Scout. Use Google Maps to find taxi ranks, landmarks, or facilities in Zimbabwe. Always provide URIs."
+          systemInstruction: `${this.PRODUCTION_PROMPT} Utilize Google Maps to identify critical transport infrastructure, landmarks, and facilities nearby. Include precise map URIs in your response.`
         }
       });
 
       return {
-        text: response.text || "Scanning area...",
+        text: response.text || "Scanning sector coordinates...",
         grounding: response.candidates?.[0]?.groundingMetadata?.groundingChunks || []
       };
     } catch (error) {
-      return { text: "Scout uplink offline.", grounding: [] };
+      return { text: "Scout intelligence uplink offline.", grounding: [] };
     }
   }
 }

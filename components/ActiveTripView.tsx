@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState, useMemo } from 'react';
 import { Trip, TripStatus, UserRole } from '../types';
 import { Button, Card, Badge } from './Shared';
@@ -116,7 +115,6 @@ export const ActiveTripView: React.FC<ActiveTripViewProps> = ({ trip, role, onCl
       <div className="fixed inset-0 z-40 flex flex-col bg-white">
         <div className="flex-1 relative">
           <React.Suspense fallback={<div className="w-full h-full bg-gray-100" />}>
-              {/* Fix: Fallback center coordinates were swapped, causing the map to stay at [0,0] or center incorrectly. Mapbox expects [lng, lat]. */}
               <MapView center={trip.pickup ? [trip.pickup.lng, trip.pickup.lat] : [31.0335, -17.8252]} markers={mapMarkers} routeGeometry={routeGeometry} zoom={14} />
           </React.Suspense>
           
@@ -153,7 +151,7 @@ export const ActiveTripView: React.FC<ActiveTripViewProps> = ({ trip, role, onCl
               </div>
               <div className="flex-1 min-w-0">
                 <div className="font-black text-slate-900 tracking-tight truncate">{trip.partner}</div>
-                <div className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-1">{role === 'rider' ? 'Elite Verified' : 'Market Partner'}</div>
+                <div className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-1">Elite Verified</div>
               </div>
               <div className="text-right">
                 <div className="font-black text-slate-900 text-xl tracking-tighter">${(trip.final_price || trip.proposed_price).toFixed(2)}</div>

@@ -115,7 +115,7 @@ export const SideDrawer: React.FC<SideDrawerProps> = ({
               <div className="w-16 h-16 rounded-3xl bg-white/20 backdrop-blur-md mb-4 p-1 border border-white/30 rotate-3 haptic-press">
                  <img src={user.avatar || `https://ui-avatars.com/api/?name=${user.name}&background=random`} alt={user.name} className="w-full h-full rounded-2xl object-cover bg-slate-800" />
               </div>
-              <h2 className="text-xl font-black tracking-tight italic">RideIn Elite</h2>
+              <h2 className="text-xl font-black tracking-tight uppercase">ELITE ACCESS</h2>
               <div className="flex items-center gap-2 mt-1">
                 <p className="text-[10px] font-black uppercase tracking-widest text-white/50">{user.role} Authorization</p>
                 <div className={`w-1.5 h-1.5 rounded-full ${isSyncing ? 'bg-white animate-pulse' : 'bg-emerald-400'}`}></div>

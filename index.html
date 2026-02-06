@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -25,9 +24,6 @@
     window.process.env = window.process.env || {};
   </script>
 
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link href="https://api.mapbox.com/mapbox-gl-js/v3.9.1/mapbox-gl.css" rel="stylesheet">
   <link rel="stylesheet" href="./index.css">
@@ -64,13 +60,13 @@
       transition: opacity 0.5s ease-out, visibility 0.5s;
     }
     .boot-logo {
-      font-family: 'Montserrat', sans-serif;
-      font-size: 3rem;
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      font-size: 2.5rem;
       font-weight: 900;
       color: white;
-      font-style: italic;
       letter-spacing: -0.05em;
       margin-bottom: 2rem;
+      text-transform: uppercase;
     }
     .boot-logo span { color: #FF5F00; }
     .boot-spinner {
@@ -90,9 +86,9 @@
 </head>
 <body class="bg-[#001D3D] text-gray-900 antialiased">
   <div id="boot-loader">
-    <div class="boot-logo">Ride<span>In</span></div>
+    <div class="boot-logo">GRID <span>ALPHA</span></div>
     <div class="boot-spinner"></div>
-    <div style="margin-top: 20px; font-family: monospace; font-size: 9px; color: rgba(255,255,255,0.2); letter-spacing: 0.3em; text-transform: uppercase;">
+    <div style="margin-top: 20px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 9px; color: rgba(255,255,255,0.2); letter-spacing: 0.3em; text-transform: uppercase;">
       Establishing_Neural_Link
     </div>
   </div>
@@ -110,7 +106,7 @@
          root.innerHTML = `
            <div style="height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#000814;color:white;text-align:center;padding:40px;font-family:sans-serif;">
              <div style="font-size:48px;margin-bottom:20px;">⚠️</div>
-             <h1 style="font-weight:900;margin-bottom:10px;color:#FF5F00;text-transform:uppercase;letter-spacing:-0.05em;font-style:italic;">Boot Failure</h1>
+             <h1 style="font-weight:900;margin-bottom:10px;color:#FF5F00;text-transform:uppercase;letter-spacing:-0.05em;">Boot Failure</h1>
              <p style="font-size:11px;opacity:0.6;max-width:300px;line-height:1.6;text-transform:uppercase;letter-spacing:0.1em;">
                Module Resolution Protocol Failed.<br>
                Code: ${e.message || 'RUNTIME_EXCEPTION'}
