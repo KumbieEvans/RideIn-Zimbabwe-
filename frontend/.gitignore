@@ -32,3 +32,25 @@ pnpm-lock.yaml
 *.njsproj
 *.sln
 *.sw?
+
+# Environment variables — NEVER commit .env files with secrets
+.env
+.env.local
+.env.development
+.env.development.local
+.env.test
+.env.test.local
+.env.production
+.env.production.local
+.env.staging
+.env*.local
+
+# Netlify
+.netlify
+
+# Coverage & testing
+coverage
+*.lcov
+
+# OS files
+Thumbs.db
