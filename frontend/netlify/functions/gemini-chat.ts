@@ -40,7 +40,20 @@ export const handler = async (event: any) => {
       return { statusCode: 200, headers, body: response.text || "{}" };
     }
 
-    // 2. FARE GUARD
+    // 2. MARKET INTEL
+    if (mode === "market-intel") {
+      const response = await ai.models.generateContent({
+        model: "gemini-3-flash-preview",
+        contents: prompt,
+        config: {
+          tools: [{ googleSearch: {} }],
+          systemInstruction: "You are the RideIn Assistant for people in Zimbabwe. Provide a single, helpful travel tip for this area."
+        }
+      });
+      return { statusCode: 200, headers, body: JSON.stringify({ text: response.text || "" }) };
+    }
+
+    // 3. FARE GUARD
     if (context === "fare-guard") {
       const response = await ai.models.generateContent({
         model: "gemini-3-flash-preview",
@@ -53,7 +66,7 @@ export const handler = async (event: any) => {
       return { statusCode: 200, headers, body: JSON.stringify({ text: response.text || "" }) };
     }
 
-    // 3. SCOUT
+    // 4. SCOUT
     if (mode === "scout") {
       const response = await ai.models.generateContent({
         model: "gemini-2.5-flash",

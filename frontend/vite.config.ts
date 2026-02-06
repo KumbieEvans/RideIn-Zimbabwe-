@@ -51,10 +51,9 @@ export default defineConfig(({ mode }) => {
     ],
     // The 'define' block replaces literal process.env strings in source code during build.
     // We prioritize values from 'env' which merges .env files and system process.env.
+    // MAPBOX_TOKEN is safe to include as Mapbox tokens are designed for client-side use.
     define: {
       'process.env.MAPBOX_TOKEN': JSON.stringify(env.MAPBOX_TOKEN || ''),
-      'process.env.API_KEY': JSON.stringify(env.API_KEY || ''),
-      'process.env.ABLY_API_KEY': JSON.stringify(env.ABLY_API_KEY || ''),
     },
     build: {
       outDir: 'dist',
