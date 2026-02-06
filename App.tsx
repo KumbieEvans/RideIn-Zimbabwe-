@@ -109,7 +109,7 @@ const App: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    return ablyService.onConnectionChange(setAblyStatus);
+    return ablyService.onConnectionChange((state: any) => setAblyStatus(state));
   }, []);
 
   const handleLogin = (newUser: User) => {

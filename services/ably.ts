@@ -2,11 +2,13 @@
 import * as Ably from 'ably';
 import { ChatMessage, TripStatus, Trip, Bid } from '../types';
 
+type AblyConnectionState = 'disconnected' | 'connecting' | 'connected' | 'suspended' | 'failed';
+
 class AblyService {
   private client: Ably.Types.RealtimePromise | null = null;
-  public connectionState: 'disconnected' | 'connecting' | 'connected' | 'suspended' | 'failed' = 'disconnected';
+  public connectionState: AblyConnectionState = 'disconnected';
   private activeSubscriptions: Map<string, Ably.Types.RealtimeChannelPromise> = new Map();
-  private connectionListeners: ((state: string) => void)[] = [];
+  private connectionListeners: ((state: any) => void)[] = [];
   
   private channels = {
     global: 'global:alerts',
@@ -19,7 +21,7 @@ class AblyService {
     rideChat: (tripId: string) => `ride:${tripId}:chat`
   };
 
-  onConnectionChange(listener: (state: string) => void) {
+  onConnectionChange(listener: (state: any) => void) {
     this.connectionListeners.push(listener);
     return () => {
       this.connectionListeners = this.connectionListeners.filter(l => l !== listener);
@@ -34,8 +36,8 @@ class AblyService {
       autoConnect: true,
     });
 
-    this.client.connection.on((stateChange) => {
-      this.connectionState = stateChange.current as any;
+    this.client.connection.on((stateChange: Ably.Types.ConnectionStateChange) => {
+      this.connectionState = stateChange.current as AblyConnectionState;
       this.connectionListeners.forEach(l => l(stateChange.current));
     });
   }
@@ -84,15 +86,17 @@ class AblyService {
     const channel = this.client.channels.get(channelName);
     
     // Subscribe to specific 'loc' updates on the presence channel
-    channel.subscribe('loc', (msg) => cb(msg.data));
+    channel.subscribe('loc', (msg: Ably.Types.Message) => cb(msg.data));
     
-    // Also fetch current members
-    channel.presence.get((err, members) => {
-       if (!err && members) {
-          members.forEach(m => {
-            if (m.data && m.data.lat) cb(m.data);
-          });
-       }
+    // Also fetch current members using the Promise-based API
+    channel.presence.get().then((members) => {
+      if (members) {
+        members.forEach((m: Ably.Types.PresenceMessage) => {
+          if (m.data && m.data.lat) cb(m.data);
+        });
+      }
+    }).catch(err => {
+      console.error("[Ably] Failed to fetch presence members:", err);
     });
 
     this.activeSubscriptions.set(channelName, channel);
@@ -120,7 +124,7 @@ class AblyService {
     const grid = `${Math.floor(lat * 10)}_${Math.floor(lng * 10)}`;
     const channelName = this.channels.rideRequests(city, grid);
     const channel = this.client.channels.get(channelName);
-    channel.subscribe((msg) => cb(msg.data));
+    channel.subscribe((msg: Ably.Types.Message) => cb(msg.data));
     this.activeSubscriptions.set(channelName, channel);
     return () => {
       channel.unsubscribe();
@@ -131,7 +135,7 @@ class AblyService {
   private subscribe(channelName: string, callback: (msg: any) => void) {
     if (!this.client) return () => {};
     const channel = this.client.channels.get(channelName);
-    channel.subscribe((message) => callback(message.data));
+    channel.subscribe((message: Ably.Types.Message) => callback(message.data));
     this.activeSubscriptions.set(channelName, channel);
     return () => {
       channel.unsubscribe();
