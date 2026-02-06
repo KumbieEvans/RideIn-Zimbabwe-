@@ -27,6 +27,8 @@ export const RiderHomeView: React.FC<{ user: User; onLogout: () => void; onUserU
   const [activeTrip, setActiveTrip] = useState<Trip | null>(null);
   const [proposedFare, setProposedFare] = useState<number>(0);
   const [selectedCategory, setSelectedCategory] = useState<string>(PASSENGER_CATEGORIES[0].name);
+  const [routeDistance, setRouteDistance] = useState<number>(0);
+  const [routeDuration, setRouteDuration] = useState<number>(0);
   
   const [aiPrompt, setAiPrompt] = useState('');
   const [isAiParsing, setIsAiParsing] = useState(false);
@@ -61,6 +63,8 @@ export const RiderHomeView: React.FC<{ user: User; onLogout: () => void; onUserU
       mapboxService.getRoute(pickupCoords, dropoffCoords).then(route => {
         if (route) {
           setRouteGeometry(route.geometry);
+          setRouteDistance(parseFloat(route.distance));
+          setRouteDuration(Math.ceil(parseFloat(route.duration) / 60)); // Convert seconds to minutes
           setProposedFare(Math.max(2, parseFloat(route.distance) * 0.8));
           setViewState('review');
         }
@@ -102,7 +106,7 @@ export const RiderHomeView: React.FC<{ user: User; onLogout: () => void; onUserU
       riderId: user.id, type: activeTab === 'ride' ? VehicleType.PASSENGER : VehicleType.FREIGHT, category: selectedCategory,
       pickup: { address: pickup, lat: pickupCoords.lat, lng: pickupCoords.lng },
       dropoff: { address: dropoff, lat: dropoffCoords.lat, lng: dropoffCoords.lng },
-      proposed_price: proposedFare, distance_km: 0, duration: 0,
+      proposed_price: proposedFare, distance_km: routeDistance, duration: routeDuration,
     });
     setActiveTrip(trip); setViewState('bidding');
   };

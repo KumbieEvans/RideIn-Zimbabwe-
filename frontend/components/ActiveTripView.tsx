@@ -25,7 +25,9 @@ export const ActiveTripView: React.FC<ActiveTripViewProps> = ({ trip, role, onCl
   const [isSafetyHubOpen, setIsSafetyHubOpen] = useState(false);
 
   const currentUserId = role === 'rider' ? trip.riderId : trip.driverId || 'unknown'; 
-  const partnerName = trip.partner || 'Partner';
+  const partnerName = role === 'driver' 
+    ? trip.riderName 
+    : (trip.partner || trip.bids?.find(b => b.id === trip.acceptedBidId)?.driverName || 'Your Driver');
 
   useEffect(() => {
     if (trip.pickup && trip.dropoff && !routeGeometry) {
@@ -76,6 +78,10 @@ export const ActiveTripView: React.FC<ActiveTripViewProps> = ({ trip, role, onCl
     ablyService.subscribeToChat(trip.id, handleMessage);
     return () => ablyService.unsubscribe(`ride:${trip.id}:chat`);
   }, [trip.id, isChatOpen, currentUserId]);
+
+  useEffect(() => {
+    if (isChatOpen) setUnreadCount(0);
+  }, [isChatOpen]);
 
   const mapMarkers = useMemo(() => {
       const markers: any[] = [];
