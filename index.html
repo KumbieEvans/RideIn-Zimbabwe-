@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <meta name="theme-color" content="#002B5B">
+  <meta name="theme-color" content="#001D3D">
   <meta name="description" content="Zimbabwe's Premium Mobility App - RideIn">
   
   <meta http-equiv="Content-Security-Policy" content="
@@ -19,11 +19,14 @@
 
   <title>RideIn Zimbabwe</title>
   
+  <!-- Hard Shim: Prevent ReferenceError: process is not defined -->
+  <script>
+    window.process = window.process || { env: {} };
+    window.process.env = window.process.env || {};
+  </script>
+
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="dns-prefetch" href="https://api.mapbox.com">
-  <link rel="dns-prefetch" href="https://esm.sh">
-
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link href="https://api.mapbox.com/mapbox-gl-js/v3.9.1/mapbox-gl.css" rel="stylesheet">
@@ -38,40 +41,85 @@
     "@google/genai": "https://esm.sh/@google/genai@1.3.0",
     "mapbox-gl": "https://esm.sh/mapbox-gl@3.9.1",
     "ably": "https://esm.sh/ably@1.2.49",
-    "html2canvas": "https://esm.sh/html2canvas@1.4.1",
-    "html2canvas-pro": "https://esm.sh/html2canvas-pro@1.5.8",
     "react-dom/": "https://esm.sh/react-dom@^19.2.4/",
-    "react/": "https://esm.sh/react@^19.2.4/",
     "vite": "https://esm.sh/vite@^7.3.1",
     "@vitejs/plugin-react": "https://esm.sh/@vitejs/plugin-react@^5.1.3",
     "vite-plugin-pwa": "https://esm.sh/vite-plugin-pwa@^1.2.0",
-    "node-fetch": "https://esm.sh/node-fetch@^3.3.2"
+    "node-fetch": "https://esm.sh/node-fetch@^3.3.2",
+    "react/": "https://esm.sh/react@^19.2.4/"
   }
 }
 </script>
+
+  <style>
+    #boot-loader {
+      position: fixed;
+      inset: 0;
+      background: #000814;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 99999;
+      transition: opacity 0.5s ease-out, visibility 0.5s;
+    }
+    .boot-logo {
+      font-family: 'Montserrat', sans-serif;
+      font-size: 3rem;
+      font-weight: 900;
+      color: white;
+      font-style: italic;
+      letter-spacing: -0.05em;
+      margin-bottom: 2rem;
+    }
+    .boot-logo span { color: #FF5F00; }
+    .boot-spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid rgba(255,255,255,0.05);
+      border-top-color: #FF5F00;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    body.loaded #boot-loader {
+      opacity: 0;
+      visibility: hidden;
+    }
+  </style>
 </head>
-<body class="bg-[#001D3D] text-gray-900 antialiased overflow-y-auto">
+<body class="bg-[#001D3D] text-gray-900 antialiased">
+  <div id="boot-loader">
+    <div class="boot-logo">Ride<span>In</span></div>
+    <div class="boot-spinner"></div>
+    <div style="margin-top: 20px; font-family: monospace; font-size: 9px; color: rgba(255,255,255,0.2); letter-spacing: 0.3em; text-transform: uppercase;">
+      Establishing_Neural_Link
+    </div>
+  </div>
+
   <div id="root"></div>
   
+  <script type="module" src="./index.tsx"></script>
+
   <script>
     // System Error Interceptor
     window.addEventListener('error', function(e) {
       console.error('[Boot Fault]', e);
-      if (e.message.includes('import') || e.message.includes('module') || e.message.includes('Unexpected token')) {
-        const root = document.getElementById('root');
-        if (root && !root.innerHTML.trim()) {
-           root.innerHTML = `
-             <div style="height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#001D3D;color:white;text-align:center;padding:40px;font-family:sans-serif;">
-               <div style="font-size:48px;margin-bottom:20px;">⚡</div>
-               <h1 style="font-weight:900;margin-bottom:10px;color:#FF5F00;text-transform:uppercase;letter-spacing:-0.05em;">Link Failure</h1>
-               <p style="font-size:11px;opacity:0.6;max-width:300px;line-height:1.6;text-transform:uppercase;letter-spacing:0.1em;">
-                 Module Resolution Protocol Failed.<br>
-                 Please verify network signal and re-sync.
-               </p>
-               <button onclick="window.location.reload(true)" style="margin-top:30px;padding:18px 36px;background:#FF5F00;border:none;color:white;font-weight:900;border-radius:16px;cursor:pointer;text-transform:uppercase;letter-spacing:0.2em;">Synchronize Node</button>
-             </div>
-           `;
-        }
+      const root = document.getElementById('root');
+      if (root && (!root.innerHTML.trim() || root.innerHTML.includes(' Establishing_Neural_Link'))) {
+         root.innerHTML = `
+           <div style="height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#000814;color:white;text-align:center;padding:40px;font-family:sans-serif;">
+             <div style="font-size:48px;margin-bottom:20px;">⚠️</div>
+             <h1 style="font-weight:900;margin-bottom:10px;color:#FF5F00;text-transform:uppercase;letter-spacing:-0.05em;font-style:italic;">Boot Failure</h1>
+             <p style="font-size:11px;opacity:0.6;max-width:300px;line-height:1.6;text-transform:uppercase;letter-spacing:0.1em;">
+               Module Resolution Protocol Failed.<br>
+               Code: ${e.message || 'RUNTIME_EXCEPTION'}
+             </p>
+             <button onclick="window.location.reload(true)" style="margin-top:30px;padding:18px 36px;background:#FF5F00;border:none;color:white;font-weight:900;border-radius:16px;cursor:pointer;text-transform:uppercase;letter-spacing:0.2em;">Retry Uplink</button>
+           </div>
+         `;
+         const loader = document.getElementById('boot-loader');
+         if (loader) loader.style.display = 'none';
       }
     }, true);
   </script>

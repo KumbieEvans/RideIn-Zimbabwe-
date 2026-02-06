@@ -37,6 +37,11 @@ const MapView: React.FC<MapViewProps> = ({
   const map = useRef<mapboxgl.Map | null>(null);
   const staticMarkersRef = useRef<Map<string, mapboxgl.Marker>>(new Map());
   const [isLoaded, setIsLoaded] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const getMapboxToken = () => {
+    return process.env.MAPBOX_TOKEN || '';
+  };
 
   const createCustomMarker = (type: string, rotation: number = 0) => {
     const el = document.createElement('div');
@@ -72,9 +77,9 @@ const MapView: React.FC<MapViewProps> = ({
   useEffect(() => {
     if (map.current || !mapContainer.current) return;
 
-    const token = process.env.MAPBOX_TOKEN;
+    const token = getMapboxToken();
     if (!token) {
-      console.error("[MapView] ERROR: Mapbox access token is missing.");
+      setError("Grid Intelligence Key Missing (Mapbox Token)");
       return;
     }
 
@@ -83,7 +88,7 @@ const MapView: React.FC<MapViewProps> = ({
     try {
       map.current = new mapboxgl.Map({
         container: mapContainer.current,
-        style: 'mapbox://styles/mapbox/dark-v11', // High-contrast tactical mode
+        style: 'mapbox://styles/mapbox/dark-v11',
         center: center,
         zoom: zoom,
         pitch: 45,
@@ -108,13 +113,19 @@ const MapView: React.FC<MapViewProps> = ({
         }
       });
 
+      map.current.on('error', (e) => {
+        if (e.error?.status === 401) {
+          setError("Protocol Unauthorized: Invalid Mapbox Token");
+        }
+      });
+
       if (isPickingLocation && onLocationPick) {
         map.current.on('click', (e) => {
           onLocationPick(e.lngLat.lat, e.lngLat.lng);
         });
       }
     } catch (err) {
-      console.error('[MapView] Initialization failed:', err);
+      setError("Core Mapping Engine Failure");
     }
 
     return () => {
@@ -124,7 +135,6 @@ const MapView: React.FC<MapViewProps> = ({
     };
   }, []);
 
-  // Sync center when props update (Fixes 0,0 lock)
   useEffect(() => {
     if (isLoaded && map.current && center) {
       map.current.easeTo({ center: center, duration: 1500, zoom: Math.max(map.current.getZoom(), 14) });
@@ -172,6 +182,16 @@ const MapView: React.FC<MapViewProps> = ({
       }
     });
   }, [markers, isLoaded]);
+
+  if (error) {
+    return (
+      <div className="w-full h-full bg-[#001D3D] flex flex-col items-center justify-center p-12 text-center text-white font-mono">
+        <i className="fa-solid fa-triangle-exclamation text-4xl text-brand-orange mb-6"></i>
+        <p className="text-[10px] font-black uppercase tracking-[0.3em]">{error}</p>
+        <button onClick={() => window.location.reload()} className="mt-8 px-6 py-3 bg-white/5 border border-white/10 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-white/10 transition-all">Retry Link</button>
+      </div>
+    );
+  }
 
   return <div ref={mapContainer} className="w-full h-full grayscale-[0.5] contrast-[1.1]" />;
 };

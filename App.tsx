@@ -59,7 +59,7 @@ const App: React.FC = () => {
 
   useEffect(() => {
     // Guaranteed Splash visibility for initial brand engagement
-    const splashTimer = setTimeout(() => setShowSplash(false), 2400);
+    const splashTimer = setTimeout(() => setShowSplash(false), 2600);
     
     // Grid Connectivity Listeners
     const handleOnline = () => setIsOnline(true);
@@ -109,6 +109,7 @@ const App: React.FC = () => {
   }, []);
 
   useEffect(() => {
+    // Correctly handle state types from Ably connection state
     return ablyService.onConnectionChange((state: any) => setAblyStatus(state));
   }, []);
 
