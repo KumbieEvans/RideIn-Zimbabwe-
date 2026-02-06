@@ -225,24 +225,8 @@ export function useActiveTrip(): UseActiveTripReturn {
   const [error, setError] = useState<string | null>(null);
 
   const refresh = useCallback(async (): Promise<void> => {
-    setLoading(true);
-    setError(null);
-    try {
-      // Manual fetch of active trip
-      const trip = await xanoService.getMe().then(() => {
-        // Since there's no direct getActiveTrip method, we rely on the subscription
-        return null;
-      }).catch(() => null);
-      
-      if (trip) {
-        setActiveTrip(trip);
-      }
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Failed to refresh active trip';
-      setError(message);
-    } finally {
-      setLoading(false);
-    }
+    // Note: refresh is a no-op since the subscription automatically polls for active trips.
+    // This function is provided for API consistency but doesn't perform any action.
   }, []);
 
   useEffect(() => {
@@ -534,7 +518,7 @@ export function useDriverLocation(
               city,
               newLocation.lat,
               newLocation.lng,
-              0
+              0 // rotation/heading (0 = north, not yet implemented)
             );
           }
         },
