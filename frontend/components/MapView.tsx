@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import React from 'react';
 import mapboxgl from 'mapbox-gl';
+import { Trip } from '../types'; // Import the Trip type
 
 interface MapMarker {
   id: string;

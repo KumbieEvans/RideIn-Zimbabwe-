@@ -70,13 +70,13 @@ class AblyService {
     
     channel.subscribe('loc', (msg: Ably.Types.Message) => cb(msg.data));
     
-    channel.presence.get().then((members) => {
+    channel.presence.get().then((members: Ably.Types.PresenceMessage[]) => {
       if (members) {
         members.forEach((m: Ably.Types.PresenceMessage) => {
           if (m.data && m.data.lat) cb(m.data);
         });
       }
-    }).catch(err => {
+    }).catch((err: Error) => {
       console.error("[Ably] Failed to fetch presence members:", err);
     });
 
