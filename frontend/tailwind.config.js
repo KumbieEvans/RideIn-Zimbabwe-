@@ -10,8 +10,8 @@ export default {
     extend: {
       colors: {
         brand: {
-          blue: '#002B5B',
-          'blue-light': '#0047AB',
+          blue: '#5B5FE3',
+          'blue-light': '#7B7FF0',
           orange: '#FF5F00',
           'orange-light': '#FF7A33',
         }
