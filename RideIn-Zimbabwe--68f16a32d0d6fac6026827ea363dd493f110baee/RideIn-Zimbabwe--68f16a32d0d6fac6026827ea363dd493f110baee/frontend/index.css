@@ -1,0 +1,72 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --sat: env(safe-area-inset-top, 0px);
+    --sar: env(safe-area-inset-right, 0px);
+    --sab: env(safe-area-inset-bottom, 0px);
+    --sal: env(safe-area-inset-left, 0px);
+    --apple-ease: cubic-bezier(0.32, 0.72, 0, 1);
+  }
+
+  * {
+    -webkit-tap-highlight-color: transparent;
+    outline: none !important;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    background-color: #FFFFFF;
+  }
+
+  body {
+    overscroll-behavior-y: none;
+    font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+    user-select: none;
+    background-color: #FFFFFF;
+    color: #000000;
+    padding: var(--sat) var(--sar) var(--sab) var(--sal);
+    -webkit-overflow-scrolling: touch;
+    overflow-x: hidden;
+  }
+
+  i, em, .italic, h1, h2, h3, h4, span, div, p, button, input, select, textarea {
+    font-style: normal !important;
+  }
+}
+
+@layer components {
+  .pulse-ring {
+    @apply absolute inset-0 rounded-full opacity-0;
+    animation: pulse-ring 2s cubic-bezier(0.24, 0, 0.38, 1) infinite;
+  }
+
+  @keyframes pulse-ring {
+    0% { transform: scale(0.5); opacity: 0.8; }
+    80%, 100% { transform: scale(2.5); opacity: 0; }
+  }
+
+  .uber-shadow {
+    box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+  }
+  
+  .uber-shadow-lg {
+    box-shadow: 0 12px 32px rgba(0,0,0,0.12);
+  }
+}
+
+@layer utilities {
+  .safe-top { padding-top: var(--sat); }
+  .safe-bottom { padding-bottom: var(--sab); }
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+
+  .haptic-press {
+    transition: transform 0.2s var(--apple-ease);
+  }
+  
+  .haptic-press:active {
+    transform: scale(0.97);
+  }
+}

@@ -1,0 +1,10 @@
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+[build.environment]
+  # Disable secret scanning for Mapbox public token which is required in the client bundle
+  SECRETS_SCAN_ENABLED = "false"
+
+[functions]
+  directory = "netlify/functions"

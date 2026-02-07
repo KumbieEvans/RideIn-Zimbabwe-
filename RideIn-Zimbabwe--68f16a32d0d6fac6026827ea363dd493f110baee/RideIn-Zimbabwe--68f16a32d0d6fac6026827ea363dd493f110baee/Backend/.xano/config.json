@@ -1,0 +1,12 @@
+{
+  "instanceName": "xjx0-8jca-3xnk",
+  "workspaceName": "Ride-hailing Application",
+  "workspaceId": 34,
+  "branch": "v1",
+  "paths": {
+    "functions": "functions",
+    "tables": "tables",
+    "apis": "apis",
+    "tasks": "tasks"
+  }
+}

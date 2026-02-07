@@ -1,0 +1,14 @@
+{
+  "name": "RideIn Zimbabwe",
+  "short_name": "RideIn",
+  "description": "Zimbabwe's Premium Mobility App - Powered by Gemini AI",
+  "theme_color": "#002B5B",
+  "background_color": "#ffffff",
+  "display": "standalone",
+  "orientation": "portrait",
+  "requestFramePermissions": [
+    "geolocation",
+    "camera",
+    "microphone"
+  ]
+}
