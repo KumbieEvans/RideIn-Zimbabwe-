@@ -113,6 +113,10 @@ class AblyService {
     };
   }
 
+  subscribeToTripUpdates(tripId: string, callback: (update: any) => void) {
+    return this.subscribe(this.channels.rideEvents(tripId), callback);
+  }
+
   private subscribe(channelName: string, callback: (msg: any) => void) {
     if (!this.client) return () => {};
     const channel = this.client.channels.get(channelName);

@@ -12,6 +12,16 @@ dist
 dist-ssr
 *.local
 
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# Package managers
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
@@ -22,3 +32,25 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Environment variables — NEVER commit .env files with secrets
+.env
+.env.local
+.env.development
+.env.development.local
+.env.test
+.env.test.local
+.env.production
+.env.production.local
+.env.staging
+.env*.local
+
+# Netlify
+.netlify
+
+# Coverage & testing
+coverage
+*.lcov
+
+# OS files
+Thumbs.db

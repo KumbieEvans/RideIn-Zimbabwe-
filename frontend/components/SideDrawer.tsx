@@ -2,6 +2,7 @@ import React, { useRef, useEffect, useState } from 'react';
 import { User, UserRole } from '../types';
 import { xanoService } from '../services/xano';
 import { ablyService } from '../services/ably';
+import { useToastContext } from '../hooks/useToastContext';
 
 interface SideDrawerProps {
   isOpen: boolean;
@@ -24,6 +25,8 @@ export const SideDrawer: React.FC<SideDrawerProps> = ({
 }) => {
   const [isSyncing, setIsSyncing] = useState(false);
   const [shouldRender, setShouldRender] = useState(isOpen);
+
+  const toast = useToastContext();
 
   useEffect(() => {
     if (isOpen) setShouldRender(true);
@@ -72,7 +75,9 @@ export const SideDrawer: React.FC<SideDrawerProps> = ({
         onNavigate('map');
         onClose();
       } catch (e) {
-        alert("Failed to switch modes.");
+        console.error('Failed to switch role:', e);
+        const message = e instanceof Error ? e.message : 'Failed to switch modes';
+        toast.error(message);
       } finally {
         setIsSyncing(false);
       }

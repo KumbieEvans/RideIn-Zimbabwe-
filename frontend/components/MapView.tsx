@@ -15,6 +15,8 @@ interface MapViewProps {
   zoom?: number;
   markers?: MapMarker[];
   routeGeometry?: any;
+  trip?: Trip; // Added the trip property to the interface
+  driverLocation?: { lat: number; lng: number; rotation: number } | null; // Added driverLocation property
 }
 
 const MapView: React.FC<MapViewProps> = ({ 
