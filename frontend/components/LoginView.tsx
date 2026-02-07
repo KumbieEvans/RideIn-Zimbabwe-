@@ -17,6 +17,8 @@ export const LoginView: React.FC<{ onLogin: (user: User) => void }> = ({ onLogin
   const [fullName, setFullName] = useState('');
   const [city, setCity] = useState('Harare');
   const [photos, setPhotos] = useState<(string | null)[]>([null, null, null, null]);
+  const [vehicleType, setVehicleType] = useState<VehicleType>(VehicleType.PASSENGER);
+  const [vehicleCategory, setVehicleCategory] = useState<string>('Standard');
 
   const handleNext = (e: React.FormEvent) => {
     e.preventDefault();
@@ -47,7 +49,7 @@ export const LoginView: React.FC<{ onLogin: (user: User) => void }> = ({ onLogin
       if (isSignup) {
         user = await xanoService.signup({
           name: fullName, phone: formattedPhone, role, city,
-          vehicle: role === 'driver' ? { type: VehicleType.PASSENGER, category: 'Standard', photos: photos.filter(p => p !== null) as string[] } : undefined
+          vehicle: role === 'driver' ? { type: vehicleType, category: vehicleCategory, photos: photos.filter(p => p !== null) as string[] } : undefined
         }, password);
       } else {
         user = await xanoService.login(formattedPhone, password);
@@ -93,13 +95,46 @@ export const LoginView: React.FC<{ onLogin: (user: User) => void }> = ({ onLogin
             )}
 
             {isSignup && role === 'driver' && step === 2 && (
-              <div className="grid grid-cols-2 gap-4">
-                {photos.map((photo, i) => (
-                  <div key={i} className="aspect-square bg-zinc-50 rounded-2xl border-2 border-dashed border-zinc-200 relative overflow-hidden flex items-center justify-center">
-                    {photo ? <img src={photo} className="w-full h-full object-cover" /> : <label className="cursor-pointer text-zinc-300 flex flex-col items-center"><i className="fa-solid fa-camera text-xl mb-1"></i><input type="file" className="hidden" onChange={(e) => handlePhotoUpload(e, i)} /></label>}
+              <>
+                <div className="space-y-2 mb-4">
+                  <label className="text-[10px] uppercase tracking-widest ml-1 block text-zinc-500 font-bold">Vehicle Type</label>
+                  <div className="flex bg-zinc-50 p-1 rounded-xl border border-zinc-100">
+                    <button type="button" onClick={() => { setVehicleType(VehicleType.PASSENGER); setVehicleCategory('Standard'); }} className={`flex-1 py-3 text-[10px] font-bold uppercase tracking-widest rounded-lg transition-all ${vehicleType === VehicleType.PASSENGER ? 'bg-white text-black shadow-sm' : 'text-zinc-400'}`}>Passenger</button>
+                    <button type="button" onClick={() => { setVehicleType(VehicleType.FREIGHT); setVehicleCategory('Bike Delivery (Up to 20kg)'); }} className={`flex-1 py-3 text-[10px] font-bold uppercase tracking-widest rounded-lg transition-all ${vehicleType === VehicleType.FREIGHT ? 'bg-white text-black shadow-sm' : 'text-zinc-400'}`}>Freight</button>
                   </div>
-                ))}
-              </div>
+                </div>
+
+                <div className="space-y-2 mb-4">
+                  <label className="text-[10px] uppercase tracking-widest ml-1 block text-zinc-500 font-bold">Vehicle Category</label>
+                  <select value={vehicleCategory} onChange={e => setVehicleCategory(e.target.value)} className="w-full bg-zinc-50 border border-zinc-100 text-black rounded-xl py-4 px-6 font-bold text-sm outline-none appearance-none">
+                    {vehicleType === VehicleType.PASSENGER ? (
+                      <>
+                        <option value="Standard">Standard</option>
+                        <option value="Premium">Premium</option>
+                        <option value="Luxury">Luxury</option>
+                      </>
+                    ) : (
+                      <>
+                        <option value="Bike Delivery (Up to 20kg)">Bike Delivery (Up to 20kg)</option>
+                        <option value="1–2 Tonne Truck">1–2 Tonne Truck</option>
+                        <option value="3–5 Tonne Truck">3–5 Tonne Truck</option>
+                        <option value="7–10 Tonne Truck">7–10 Tonne Truck</option>
+                      </>
+                    )}
+                  </select>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-[10px] uppercase tracking-widest ml-1 block text-zinc-500 font-bold">Vehicle Photos</label>
+                  <div className="grid grid-cols-2 gap-4">
+                    {photos.map((photo, i) => (
+                      <div key={i} className="aspect-square bg-zinc-50 rounded-2xl border-2 border-dashed border-zinc-200 relative overflow-hidden flex items-center justify-center">
+                        {photo ? <img src={photo} className="w-full h-full object-cover" /> : <label className="cursor-pointer text-zinc-300 flex flex-col items-center"><i className="fa-solid fa-camera text-xl mb-1"></i><input type="file" className="hidden" onChange={(e) => handlePhotoUpload(e, i)} /></label>}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </>
             )}
           </div>
 
