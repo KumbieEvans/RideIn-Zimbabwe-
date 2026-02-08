@@ -1,4 +1,4 @@
-import * as Ably from 'ably';
+import * as Ably from 'ably/promises';
 import { ChatMessage, Trip } from '../types';
 
 type AblyConnectionState = 'disconnected' | 'connecting' | 'connected' | 'suspended' | 'failed';
