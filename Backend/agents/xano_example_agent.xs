@@ -34,7 +34,7 @@ agent "Xano Example Agent" {
     search_grounding: false
     thinking_tokens : 0
     include_thoughts: false
-    baseURL         : ""
+    baseURL         : "https://xjx0-8jca-3xnk.e2.xano.io/api:MPVI7NsD:v1"
     headers         : ""
     safety_settings : ""
     dynamic_retrival: ""
